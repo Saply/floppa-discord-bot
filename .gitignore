@@ -1,0 +1,4 @@
+.env
+images
+.vscode
+cogs/__pycache__
