@@ -1,4 +1,4 @@
-import discord, random, os
+import discord, random, os, asyncio
 from discord.ext import commands
 from discord_slash import cog_ext, SlashContext
 from discord_slash.utils.manage_commands import create_option, create_choice
@@ -56,6 +56,32 @@ class Test(commands.Cog):
              ])
     async def test(self, ctx: SlashContext, optone: str):
         await ctx.send(content=f"Wow, you actually chose {optone}? :(")
+
+    @commands.command(name = "echo", description = "lol idk", guild_ids = [536835061895397386])
+    async def tttttttt(self, ctx: SlashContext):
+        await ctx.message.delete()
+        
+        embed = discord.Embed(title = "what want to send", description = "this will expire after like 30 seconds lol")
+        sent = await ctx.send(embed = embed)
+
+        """
+        def check(message)
+        """
+
+        try:
+            msg = await self.client.wait_for(
+                "message",
+                timeout = 60,
+                check = lambda message: message.author == ctx.author and message.channel == ctx.channel
+            )
+            if msg:
+                await sent.delete()
+                await msg.delete()
+                await ctx.send(msg.content)
+
+        except asyncio.TimeoutError:
+            await sent.delete()
+            await ctx.send("Cancelled due to timeout zamn youre slow af", delete_after = 5)
 
 
 def setup(client: commands.Bot):

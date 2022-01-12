@@ -1,10 +1,10 @@
-import discord, random, os
+import discord, random, os, asyncio
 from discord.ext import commands
 from discord_slash import cog_ext, SlashContext
 from discord_slash.utils.manage_commands import create_option, create_choice
 
 class Animal(commands.Cog):
-    def __init__(self, client):
+    def __init__(self, client: commands.Bot):
         self.client = client 
     
     @cog_ext.cog_slash(
@@ -28,7 +28,7 @@ class Animal(commands.Cog):
                     ),
                     create_choice(
                         name = "Shiba Inu",
-                        value = "shibe"
+                        value = "shiba-inu"
                     )
                 ]
             )
@@ -47,7 +47,6 @@ class Animal(commands.Cog):
         await ctx.send(file = image_file, embed = embed)
         
     
-
 
 def setup(client: commands.Bot):
     client.add_cog(Animal(client))

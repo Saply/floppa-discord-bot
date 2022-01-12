@@ -2,3 +2,4 @@
 images
 .vscode
 cogs/__pycache__
+.gitignore
