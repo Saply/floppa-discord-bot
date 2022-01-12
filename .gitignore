@@ -1,5 +1,7 @@
 .env
+what.py
 images
 .vscode
 cogs/__pycache__
+aa.json
 .gitignore
