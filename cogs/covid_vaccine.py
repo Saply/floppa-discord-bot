@@ -1,5 +1,4 @@
 import discord, datetime, pandas as pd, numpy as np, matplotlib.pyplot as plt
-# from discord_slash.context import SlashContext
 from discord.ext import commands
 from discord_slash import cog_ext, SlashContext
 
@@ -69,15 +68,17 @@ class Vaccine(commands.Cog):
     
     
     # /vaccine slash command
-    @cog_ext.cog_slash(name = "vaccine", description = "Sends the latest vaccination data from PICK", guild_ids = [536835061895397386])
+    @cog_ext.cog_slash(
+        name = "vaccine", 
+        description = "Sends the latest vaccination data from PICK", 
+        guild_ids = [536835061895397386])
     async def vaccine(self, ctx: SlashContext):
         # Reset each time (in case its a new day and new data got added to the csv file), if not it will just use the current data 
         if self.yesterday != datetime.date.today() - datetime.timedelta(days = 1):
             self.dataGetter()
             self.vaccineGraphPlot()
         
-         # i have to do this because discord sucks
-        # SCUFFED SCUFFED SCUFFED SCUFFED SCUFFED SCUFFED SCUFFED 
+         # ...yeah
         daily_first_dose = ""
         daily_second_dose = ""
         daily_booster = ""
@@ -110,19 +111,7 @@ class Vaccine(commands.Cog):
         # vaxEmbed.set_footer(text = "[**Data taken from the GitHub page of the COVID-19 Immunisation Task Force (CITF) for Malaysia's National COVID-19 Immunisation Programme (PICK)**](https://github.com/CITF-Malaysia/citf-public)")
         vaxEmbed.set_footer(text = "Data sourced from the GitHub page of the COVID-19 Immunisation Task Force (CITF) for Malaysia's National COVID-19 Immunisation Programme (PICK)")
         vaxEmbed.set_thumbnail(url = "https://cdn.discordapp.com/attachments/869934977381437500/870597552532242462/header-vax-microsite2x.png?width=675&height=675")
-        """
-        -----how to send locally saved images (real)-----
-        # Getting path to file
-        img_list = os.listdir(f"./images/{animal}")
-        img_string = random.choice(img_list)
-        path = f"./images/{animal}/{img_string}"
-
-        # Making the embed
-        embed = discord.Embed(title = f"A random {animal}", description = random.choice(["cute", "funny", "hilarious"]), color = 0x3240a8)
-        image_file = discord.File(path, filename = "image.jpg")
-        embed.set_image(url = "attachment://image.jpg")
-        await ctx.send(file = image_file, embed = embed)
-        """
+        
 
         graph_img_file = discord.File("images/_graphs/vaccination-by-state.png", filename = "image.png")
         vaxEmbed.set_image(url = "attachment://image.png")

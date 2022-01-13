@@ -1,3 +1,14 @@
 {
-    "id" 
+    "_id": 1,
+    "roles_editable": FCI,
+    "channel": #fci,
+    "collection": [
+        "id": 100,
+        "class_title": "PCT0101 INTRO TO COMPUTING TECH",
+        "meet/teams link": "https://meet.google.com",
+        "lecturer_name": "Mr.",
+        "lecture_lab_group": "TC1V",
+        "duration_in_minutes": 120,
+        "start_time": "1200"
+    ]
 }

@@ -1,9 +1,8 @@
-import os, discord, datetime
-import pandas as pd
+import os
 from dotenv import load_dotenv
 from discord.ext import commands
 from discord_slash import SlashCommand, SlashContext
-from discord_slash.utils.manage_commands import create_choice, create_option
+from discord_slash.utils.manage_commands import create_choice, create_option, create_permission
 
 # token client stuff
 load_dotenv()
