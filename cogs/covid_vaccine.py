@@ -63,7 +63,7 @@ class Vaccine(commands.Cog):
         plt.tick_params(labelsize = 5)
         plt.tight_layout()
 
-        # Discord can't send images with underscores in them lmao
+        # Save image in directory
         plt.savefig("images/_graphs/vaccination-by-state.png")
     
     
@@ -73,7 +73,7 @@ class Vaccine(commands.Cog):
         description = "Sends the latest vaccination data from PICK", 
         guild_ids = [536835061895397386])
     async def vaccine(self, ctx: SlashContext):
-        # Reset each time (in case its a new day and new data got added to the csv file), if not it will just use the current data 
+        # Reset each time (in case its a new day in which new data got added to the csv file), if not it will just use the current data 
         if self.yesterday != datetime.date.today() - datetime.timedelta(days = 1):
             self.dataGetter()
             self.vaccineGraphPlot()

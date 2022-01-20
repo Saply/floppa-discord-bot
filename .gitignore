@@ -3,5 +3,7 @@ what.py
 images
 .vscode
 cogs/__pycache__
-aa.json
+data/__pycache__
+aaa.txt
 .gitignore
+aaa.txt

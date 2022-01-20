@@ -1,8 +1,9 @@
 import discord, random, os, asyncio
+
 from discord.ext import commands
 from discord_slash import cog_ext, SlashContext
 from discord_slash.utils.manage_commands import create_option, create_choice
-
+from data.schemas import ClassDetails, ClassCollection
 class Test(commands.Cog):
     def __init__(self, client):
         self.client = client
@@ -32,40 +33,14 @@ class Test(commands.Cog):
     )
     async def _hello(self, ctx: SlashContext, option: str):
         await ctx.send(option)
-    
-    @cog_ext.cog_slash(name="test",
-             description="This is just a test command, nothing more.",
-             guild_ids = [536835061895397386],
-             options=[
-               create_option(
-                 name="optone",
-                 description="This is the first option we have.",
-                 option_type=3,
-                 required=False,
-                 choices=[
-                  create_choice(
-                    name="ChoiceOne",
-                    value="DOGE!"
-                  ),
-                  create_choice(
-                    name="ChoiceTwo",
-                    value="NO DOGE"
-                  )
-                ]
-               )
-             ])
-    async def test(self, ctx: SlashContext, optone: str):
-        await ctx.send(content=f"Wow, you actually chose {optone}? :(")
 
     @commands.command(name = "echo", description = "lol idk", guild_ids = [536835061895397386])
     async def tttttttt(self, ctx: SlashContext):
         await ctx.message.delete()
-        
         embed = discord.Embed(title = "what want to send", description = "this will expire after like 30 seconds lol")
         sent = await ctx.send(embed = embed)
-
         """
-        def check(message)
+        lambda function is equivalent to def check(message):
         """
 
         try:
@@ -83,6 +58,25 @@ class Test(commands.Cog):
             await sent.delete()
             await ctx.send("Cancelled due to timeout zamn youre slow af", delete_after = 5)
 
+    
+    @cog_ext.cog_slash(name='cooltest', description = "yea", guild_ids = [536835061895397386])
+    async def addition(self, ctx: SlashContext):
+        for classes in ClassCollection.objects().filter(id = 3):
+            embed = discord.Embed(title = "**Class Link**", url = classes.class_details.link, description = f"```{classes.class_details.link}```")
+            embed.set_author(name = "**Class is starting!**", url = classes.class_details.link, icon_url = "https://cdn.discordapp.com/emojis/872501924925165598.webp?size=128&quality=lossless")
+            embed.set_thumbnail(url = "https://mindamind.files.wordpress.com/2010/10/mmu.jpg")
+            embed.add_field(name = "ID", value = classes.id, inline = True)
+            embed.add_field(name = "Duration", value = f"{classes.class_details.duration} minutes", inline = True)
+            embed.add_field(name = "Class Name", value = classes.class_details.class_name, inline = True)
+            embed.add_field(name = "Lecture/Lab Group\t", value = classes.class_details.class_group, inline = True)
+            embed.add_field(name = "Lecturer/Lab Tutor", value = classes.class_details.lecturer_name, inline = True)
+            embed.set_footer(text = "Use the /class command to check out the options to add/update/remove/check classes")
+        await ctx.send(embed = embed)
+    
+    @cog_ext.cog_subcommand(base="group", name="say", description = "yea", guild_ids = [536835061895397386])
+    async def group_say(self, ctx: SlashContext, clsname: str):
+        print(f"Da channel ID is {clsname} dawgg")
+        await ctx.send(f"Da channel ID is {clsname} dawgg")
 
 def setup(client: commands.Bot):
     client.add_cog(Test(client))

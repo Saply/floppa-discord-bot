@@ -1,0 +1,1 @@
+# refresh/query db every 30 minutes to check if a class is happening or not 
