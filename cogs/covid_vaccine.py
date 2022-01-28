@@ -2,10 +2,11 @@ import discord, datetime, pandas as pd, numpy as np, matplotlib.pyplot as plt
 from discord.ext import commands
 from discord_slash import cog_ext, SlashContext
 
+
 class Vaccine(commands.Cog):
     def __init__(self, client):
         self.client = client
-
+        
         # Only initialised once since its always gonna be inaccurate fr fr
         self.yesterday = datetime.date.today() - datetime.timedelta(days = 1)
         self.dataGetter() 

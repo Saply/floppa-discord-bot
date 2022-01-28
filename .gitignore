@@ -1,9 +1,10 @@
 .env
 what.py
-images
 .vscode
+test.py
 cogs/__pycache__
+cogs/test.py
 data/__pycache__
-aaa.txt
-.gitignore
-aaa.txt
+data/exceptions.py
+data/validators.py
+TODO.txt

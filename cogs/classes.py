@@ -1,5 +1,5 @@
-import discord, random, os, asyncio, mongoengine as mdb
-from discord.ext import commands
+import discord, random, os, asyncio, mongoengine as mdb, datetime as dt
+from discord.ext import commands, tasks
 from discord_slash import cog_ext, SlashContext, SlashCommandOptionType
 from discord_slash.utils.manage_commands import create_option, create_choice
 
@@ -64,9 +64,15 @@ class Classes(commands.Cog):
                 required = True
             ),
             create_option(
+                name = "date",
+                description = "Enter the date of the class in DD-MM-YYYY format (eg. 12-12-2022, 01-04-2022)",
+                option_type = 3,
+                required = True
+            ),
+            create_option(
                 name = "start_time",
-                description = "Enter the time for when the class begins in 2400 hours format (eg. 1200, 1630, 2000)",
-                option_type = 4,
+                description = "Enter the time for when the class begins (eg. 9:00 AM, 12:30 PM, 4:00 PM)",
+                option_type = 3,
                 required = True
             ),
             create_option(
@@ -78,25 +84,35 @@ class Classes(commands.Cog):
         ]
     )
     
-    async def class_add(self, ctx: SlashContext, repeatable: int, class_title: str, link: str, lecturer_name: str, group: str, duration: int, start_time: int, channel: str):
+    async def class_add(self, ctx: SlashContext, repeatable: int, class_title: str, link: str, lecturer_name: str, group: str, duration: int, date: str, start_time: str, channel: str):
+        
+        # This is scuffed but trust me it works (it even accepts 9:00        AM)
+        try:
+            date_and_time = dt.datetime.strptime(f"{date} {start_time}", "%d-%m-%Y %I:%M %p")
+        except ValueError:
+            date_and_time = dt.datetime.strptime(f"{date} {start_time}", "%d-%m-%Y %I:%M%p")
+        # ValueError: time data '12-12-2022 1900-01-01 04:00:00' does not match format '%d-%m-%Y %I:%M %p'
+        
         add = ClassCollection(
                 channel_id = channel[2:-1],
+                repeatable = bool(repeatable),
+                dates = date_and_time,
+
                 class_details = ClassDetails(
                     class_name = class_title, 
                     class_group = group,
                     duration = duration, 
-                    start_time = start_time,
+                    
 
                     link = link,
-                    lecturer_name = lecturer_name,
-                    repeatable = bool(repeatable)
+                    lecturer_name = lecturer_name      
                 )
             )
             
         add.save()
-        await ctx.send(f"trust me it worked bro")
+        await ctx.send(f"Class successfully registered!")
 
-    """
+    
     @cog_ext.cog_subcommand(
         base = "class",
         name = "check",
@@ -104,8 +120,10 @@ class Classes(commands.Cog):
         guild_ids = [536835061895397386]
     )
     async def class_check(self, ctx: SlashContext):
-        return
-
+        
+        await ctx.send("awooga")
+    
+"""
     @cog_ext.cog_subcommand(
         base = "class",
         name = "remove",
@@ -113,7 +131,8 @@ class Classes(commands.Cog):
         guild_ids = [536835061895397386]
     )
     async def class_remove(self, ctx: SlashContext):
-        return
+        await ctx.send("remove")
+
 
     @cog_ext.cog_subcommand(
         base = "class",
@@ -122,12 +141,10 @@ class Classes(commands.Cog):
         guild_ids = [536835061895397386]
     )
     async def class_list(self, ctx: SlashContext):
-        return
+        await ctx.send("list")
+    
     """
     
-    ### TODO:
-    # Investigate how to make trueadd options similar to test.do_addition and emoji bot
-    # Make URL verifier or something idk
     
 
     

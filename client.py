@@ -1,7 +1,7 @@
-import os
+import os, datetime as dt
 from mongoengine import connect
 from dotenv import load_dotenv
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord_slash import SlashCommand, SlashContext
 from discord_slash.utils.manage_commands import create_choice, create_option, create_permission
 
@@ -22,6 +22,10 @@ slash = SlashCommand(client, sync_commands = True)
 async def on_ready():
     print(f'{client.user} has connected to Discord!')
     # await client.change_presence(game = discord.Game(name = "ooga booga"))
+
+
+# https://discordpy.readthedocs.io/en/latest/ext/tasks/index.html
+
 
 if __name__ == '__main__':
     # get everything in the cogs folder, the . represents folder path like cogs/cogfile.py. Have to load it without the .py extension at the end so thats what the [:-3] does
