@@ -40,8 +40,11 @@ class Animal(commands.Cog):
         img_string = random.choice(img_list)
         path = f"./images/{animal}/{img_string}"
 
+        # This is extremely important
+        compliments = ["cute", "funny", "hilarious", "extravagant", "cat"]
+
         # Making the embed
-        embed = discord.Embed(title = f"A random {animal}", description = random.choice(["cute", "funny", "hilarious"]), color = 0x3240a8)
+        embed = discord.Embed(title = f"A random {animal}", description = random.choice(compliments), color = 0x3240a8)
         image_file = discord.File(path, filename = "image.jpg")
         embed.set_image(url = "attachment://image.jpg")
         await ctx.send(file = image_file, embed = embed)

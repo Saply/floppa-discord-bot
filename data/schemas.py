@@ -7,9 +7,6 @@ class ClassDetails(EmbeddedDocument):
     class_group = StringField()
     duration = IntField()
 
-    day = StringField()
-    start_time = IntField()
-
     link = URLField()
     lecturer_name = StringField()
 
@@ -19,15 +16,15 @@ class ClassDetails(EmbeddedDocument):
     
 
 class ClassCollection(Document):
-    id = SequenceField()
-
-    # probably not needed?
-    roles_editable = ListField(LongField()) # default = roles array of current user as well as any role higher permed than it
-    # DiscordUtility.rolesGetter
-    channel_id = LongField() # default = current channel
+    class_id = SequenceField()
+    channel_id = LongField()
 
     dates = DateTimeField()
     repeatable = BooleanField()
+
+    # Users to ping when there's a class
+    notify = ListField(LongField())
+
     class_details = EmbeddedDocumentField(ClassDetails)
     
     # do meta indexing for link and start time 
@@ -36,6 +33,7 @@ class ClassCollection(Document):
     
     
     meta = {
+        'collection': 'class_collection',
         'strict': False
     }
     

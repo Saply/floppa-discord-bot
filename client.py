@@ -21,7 +21,6 @@ slash = SlashCommand(client, sync_commands = True)
 # Called when the bot is ready to be used
 async def on_ready():
     print(f'{client.user} has connected to Discord!')
-    # await client.change_presence(game = discord.Game(name = "ooga booga"))
 
 
 # https://discordpy.readthedocs.io/en/latest/ext/tasks/index.html

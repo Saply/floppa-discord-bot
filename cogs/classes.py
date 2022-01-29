@@ -91,7 +91,6 @@ class Classes(commands.Cog):
             date_and_time = dt.datetime.strptime(f"{date} {start_time}", "%d-%m-%Y %I:%M %p")
         except ValueError:
             date_and_time = dt.datetime.strptime(f"{date} {start_time}", "%d-%m-%Y %I:%M%p")
-        # ValueError: time data '12-12-2022 1900-01-01 04:00:00' does not match format '%d-%m-%Y %I:%M %p'
         
         add = ClassCollection(
                 channel_id = channel[2:-1],
@@ -110,20 +109,29 @@ class Classes(commands.Cog):
             )
             
         add.save()
+        
         await ctx.send(f"Class successfully registered!")
 
-    
+    # Add multiple optional parameters except class ID
+    # test optional parameters
     @cog_ext.cog_subcommand(
         base = "class",
-        name = "check",
-        description = "Check classes using the ID that is assigned to them",
-        guild_ids = [536835061895397386]
+        name = "edit",
+        description = "Update details of a class using the class ID",
+        guild_ids = [536835061895397386],
+        options = [
+            create_option(
+                name = "class_id",
+                description = "The ID of the class you want to edit/update",
+                option_type = 4,
+                required = True
+            )  
+        ]
     )
-    async def class_check(self, ctx: SlashContext):
-        
-        await ctx.send("awooga")
-    
-"""
+    async def class_edit(self, ctx: SlashContext, class_id: int):
+        await ctx.send(class_id)
+
+
     @cog_ext.cog_subcommand(
         base = "class",
         name = "remove",
@@ -132,22 +140,47 @@ class Classes(commands.Cog):
     )
     async def class_remove(self, ctx: SlashContext):
         await ctx.send("remove")
+    
+
+    @cog_ext.cog_subcommand(
+        base = "class",
+        name = "check",
+        description = "Check classes using the ID that is assigned to them",
+        guild_ids = [536835061895397386]
+    )
+    async def class_check(self, ctx: SlashContext):   
+        await ctx.send("awooga")
 
 
     @cog_ext.cog_subcommand(
         base = "class",
         name = "list",
-        description = "Check the list of all currently active classes in a really tidy, neat and properly formatted list (your mileage may vary)",
+        description = "Check the list of all currently active classes",
         guild_ids = [536835061895397386]
     )
     async def class_list(self, ctx: SlashContext):
         await ctx.send("list")
     
-    """
-    
-    
 
-    
+    # I really wanted t
+    @cog_ext.cog_subcommand(
+        base = "class",
+        name = "subscribe",
+        description = "Choose which class you want to be pinged for",
+        guild_ids = [536835061895397386]
+    )
+    async def class_subscribe(self, ctx: SlashContext):
+        await ctx.send("subscribe")
 
+    @cog_ext.cog_subcommand(
+        base = "class",
+        name = "unsubscribe",
+        description = "Unchoose which class you want to be pinged for (i'll make a better description eventually)",
+        guild_ids = [536835061895397386]
+    )
+    async def class_unsubscribe(self, ctx: SlashContext):
+        await ctx.send("unsubscribe")
+    
+    
 def setup(client: commands.Bot):
     client.add_cog(Classes(client))

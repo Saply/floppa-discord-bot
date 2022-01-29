@@ -1,10 +1,13 @@
 .env
 what.py
 .vscode
+testt.py
 test.py
+images/_graphs
 cogs/__pycache__
 cogs/test.py
+cogs/covid_vaccine.py
 data/__pycache__
-data/exceptions.py
-data/validators.py
+data/exception.py
+data/validator.py
 TODO.txt
