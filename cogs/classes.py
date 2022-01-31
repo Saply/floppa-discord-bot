@@ -1,4 +1,6 @@
-import discord, random, os, asyncio, mongoengine as mdb, datetime as dt
+import json
+from pprint import pprint
+import discord, random, os, mongoengine as mdb, datetime as dt
 from discord.ext import commands, tasks
 from discord_slash import cog_ext, SlashContext, SlashCommandOptionType
 from discord_slash.utils.manage_commands import create_option, create_choice
@@ -34,7 +36,7 @@ class Classes(commands.Cog):
                 ]
             ),
             create_option(
-                name = "class_title",
+                name = "class_name",
                 description = "What is the name and class code of the class? (eg. PCT0101 INTRO TO COMPUTING TECH)",
                 option_type = 3,
                 required = True
@@ -65,44 +67,42 @@ class Classes(commands.Cog):
             ),
             create_option(
                 name = "date",
-                description = "Enter the date of the class in DD-MM-YYYY format (eg. 12-12-2022, 01-04-2022)",
+                description = "Enter the date of the class in DD-MM-YYYY format (eg. 12-12-2022, 25-4-2022)",
                 option_type = 3,
                 required = True
             ),
             create_option(
                 name = "start_time",
-                description = "Enter the time for when the class begins (eg. 9:00 AM, 12:30 PM, 4:00 PM)",
+                description = "Enter the time for when the class begins (eg. 9:00 AM, 12:30 PM, 4:00PM)",
                 option_type = 3,
                 required = True
             ),
             create_option(
                 name = "channel",
-                description = "Tag the name of the channel you want the bot to post reminders in (eg. #fci, #fist, #general)",
-                option_type = 3,
+                description = "Tag the channel you want the bot to post reminders in (eg. #fci, #fist, #general)",
+                option_type = 7,
                 required = True
             )
         ]
     )
-    
-    async def class_add(self, ctx: SlashContext, repeatable: int, class_title: str, link: str, lecturer_name: str, group: str, duration: int, date: str, start_time: str, channel: str):
-        
-        # This is scuffed but trust me it works (it even accepts 9:00        AM)
+    # i'll add validation eventually
+    async def class_add(self, ctx: SlashContext, repeatable: int, class_name: str, link: str, lecturer_name: str, group: str, duration: int, date: str, start_time: str, channel: discord.channel.TextChannel):
+        # This is scuffed but trust me it works
         try:
             date_and_time = dt.datetime.strptime(f"{date} {start_time}", "%d-%m-%Y %I:%M %p")
         except ValueError:
             date_and_time = dt.datetime.strptime(f"{date} {start_time}", "%d-%m-%Y %I:%M%p")
         
         add = ClassCollection(
-                channel_id = channel[2:-1],
+                channel_id = channel.id,
                 repeatable = bool(repeatable),
-                dates = date_and_time,
+                date_time = date_and_time,
 
                 class_details = ClassDetails(
-                    class_name = class_title, 
+                    class_name = class_name, 
                     class_group = group,
                     duration = duration, 
                     
-
                     link = link,
                     lecturer_name = lecturer_name      
                 )
@@ -112,25 +112,85 @@ class Classes(commands.Cog):
         
         await ctx.send(f"Class successfully registered!")
 
-    # Add multiple optional parameters except class ID
-    # test optional parameters
+    
+    # For updating classes
     @cog_ext.cog_subcommand(
         base = "class",
         name = "edit",
         description = "Update details of a class using the class ID",
         guild_ids = [536835061895397386],
         options = [
+            # Required parameter
             create_option(
                 name = "class_id",
-                description = "The ID of the class you want to edit/update",
+                description = "The ID of the class you want to edit details of",
                 option_type = 4,
                 required = True
-            )  
+            ),
+            # Optional parameters
+            create_option(
+                name = "class_name",
+                description = "What is the name and class code of the class? (eg. PCT0101 INTRO TO COMPUTING TECH)",
+                option_type = 3,
+                required = False
+            ),
+            create_option(
+                name = "link",
+                description = "Enter the URL of the class",
+                option_type = 3,
+                required = False 
+            ),
+            create_option(
+                name = "lecturer_name",
+                description = "What is the name of the lecturer?",
+                option_type = 3,
+                required = False 
+            ),
+            create_option(
+                name = "group",
+                description = "Enter the lecture/tutorial group (eg. TT1V, TT8L, TC2V)",
+                option_type = 3,
+                required = False
+            ),
+            create_option(
+                name = "duration",
+                description = "Enter the duration of the class in minutes (eg. 60, 120, 1440)",
+                option_type = 4,
+                required = False
+            )
         ]
     )
-    async def class_edit(self, ctx: SlashContext, class_id: int):
-        await ctx.send(class_id)
+    # TODO: Do the same for changing channels and datetime as well
+    async def class_edit(self, ctx: SlashContext, class_id: int, class_name: str = None, link: str = None, 
+                         lecturer_name: str = None, group: str = None, duration: int = None):
+        args = {
+            'class_name': class_name,
+            'class_group': group,
+            'duration': duration,
+            'link': link,
+            'lecturer_name': lecturer_name
+        }
 
+        # Query result of class_id integer
+        classes = ClassCollection.objects.filter(class_id = class_id).first()
+        query = json.loads(classes.to_json())
+        new_date_time = query['date_time']
+        new_channel = query['channel_id']
+        new_class_details = query['class_details']
+        
+        ### FOR CLASS DETAILS
+        # Replaces values in query with values in args (if applicable)
+        for key in args: 
+            # Just writing 'and args[key]' would've been fine since it evaluates to the same thing, but I think it makes it unreadable
+            if (new_class_details[key] != args[key]) and (args[key] != None):
+                new_class_details[key] = args[key]
+
+
+        classes.update(set__class_details = new_class_details)
+        classes.save()
+
+        await ctx.send("Class successfully edited!")
+    
 
     @cog_ext.cog_subcommand(
         base = "class",
@@ -162,7 +222,7 @@ class Classes(commands.Cog):
         await ctx.send("list")
     
 
-    # I really wanted t
+    # like and subscribe !!
     @cog_ext.cog_subcommand(
         base = "class",
         name = "subscribe",

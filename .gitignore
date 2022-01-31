@@ -3,11 +3,14 @@ what.py
 .vscode
 testt.py
 test.py
-images/_graphs
 cogs/__pycache__
 cogs/test.py
 cogs/covid_vaccine.py
 data/__pycache__
-data/exception.py
-data/validator.py
+data/exceptions.py
+data/validators.py
 TODO.txt
+
+__pycache__/random.cpython-39.pyc
+__pycache__/test.cpython-39.pyc
+

@@ -6,16 +6,16 @@ from data.schemas import *
 class Scheduler(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client
-        self.clock.start()
+        self.class_clock.start()
     
     # query db every 30 minutes to check if a class is happening or not 
     # i set it to 1 for now since i need to test things
     @tasks.loop(minutes = 1)
-    async def clock(self):
-        # I had to remove the microseconds and seconds because including smaller units messes up every single query
+    async def class_clock(self):
+        # I had to remove the microseconds and seconds because including smaller units messes up the queries
         current_time = dt.datetime.now().replace(microsecond = 0, second = 0)
         
-        classes_query = ClassCollection.objects.filter(dates = current_time)
+        classes_query = ClassCollection.objects.filter(date_time = current_time)
         # If there are no classes, return
         if not classes_query:
             print(f"No class now, back to sleep. Time: {current_time}")
@@ -40,14 +40,14 @@ class Scheduler(commands.Cog):
             # Checks if the class is repeated or not
             # If it is repeated, update the date with the same time but for next week
             if classes.repeatable:
-                classes.update(set__dates = classes.dates + dt.timedelta(days = 7))
+                classes.update(set__date_time = classes.date_time + dt.timedelta(days = 7))
             # If it is not repeated, delete the record from the database 
             else:
                 classes.delete()
 
 
     # This is essential to ensure the bot doesnt kill itself before startup
-    @clock.before_loop
+    @class_clock.before_loop
     async def before(self):
         await self.client.wait_until_ready()
 

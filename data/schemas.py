@@ -1,6 +1,5 @@
 from mongoengine import *
 import mongoengine.errors as e
-import datetime as dt
 
 class ClassDetails(EmbeddedDocument):
     class_name = StringField()
@@ -19,7 +18,7 @@ class ClassCollection(Document):
     class_id = SequenceField()
     channel_id = LongField()
 
-    dates = DateTimeField()
+    date_time = DateTimeField()
     repeatable = BooleanField()
 
     # Users to ping when there's a class
