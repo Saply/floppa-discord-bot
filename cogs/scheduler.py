@@ -30,7 +30,7 @@ class Scheduler(commands.Cog):
             embed.add_field(name = "Duration", value = f"{classes.class_details.duration} minutes", inline = True)
             embed.add_field(name = "Class Name", value = classes.class_details.class_name, inline = True)
             embed.add_field(name = "Group", value = classes.class_details.class_group, inline = True)
-            embed.add_field(name = "Lecturer/Lab Tutor", value = classes.class_details.lecturer_name, inline = True)
+            embed.add_field(name = "Lecturer/Tutor", value = classes.class_details.lecturer_name, inline = True)
             embed.set_footer(text = "Use the /class command to check out the options to add/update/remove/check classes")
             
             # Gets channel to post class in from database

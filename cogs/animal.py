@@ -10,7 +10,7 @@ class Animal(commands.Cog):
     @cog_ext.cog_slash(
         name = "post_animal",
         description = "Posts a random animal image of your choice",
-        guild_ids = [536835061895397386],
+        guild_ids = [536835061895397386, 871300534999584778],
         options = [
             create_option(
                 name = "animal",

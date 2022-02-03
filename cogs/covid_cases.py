@@ -6,10 +6,9 @@ class CovidCases(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    @cog_ext.cog_slash(name = "covid", description = "what")
+    @cog_ext.cog_slash(name = "covid", description = "what", guild_ids = [536835061895397386])
     async def covidcases(self, ctx: SlashContext):
-        
-        await "a"
+        await ctx.send(ctx.author_id)
 
 def setup(client):
     client.add_cog(CovidCases(client))

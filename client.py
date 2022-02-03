@@ -1,4 +1,4 @@
-import os, datetime as dt
+import os, datetime as dt, discord
 from mongoengine import connect
 from dotenv import load_dotenv
 from discord.ext import commands, tasks
@@ -16,12 +16,14 @@ connect("db-classes")
 client = commands.Bot(command_prefix = '!')
 slash = SlashCommand(client, sync_commands = True)
 
+
 # done using callbacks
 @client.event
 # Called when the bot is ready to be used
 async def on_ready():
     print(f'{client.user} has connected to Discord!')
 
+        
 
 # https://discordpy.readthedocs.io/en/latest/ext/tasks/index.html
 

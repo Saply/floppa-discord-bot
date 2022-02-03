@@ -1,5 +1,4 @@
 import json
-from pprint import pprint
 import discord, random, os, mongoengine as mdb, datetime as dt
 from discord.ext import commands, tasks
 from discord_slash import cog_ext, SlashContext, SlashCommandOptionType
@@ -17,7 +16,7 @@ class Classes(commands.Cog):
         base = "class",
         name = "add",
         description = "Add classes with these wide variety of options!!!",
-        guild_ids = [536835061895397386],
+        guild_ids = [536835061895397386, 871300534999584778],
         options = [
             create_option(
                 name = "repeatable",
@@ -110,7 +109,7 @@ class Classes(commands.Cog):
             
         add.save()
         
-        await ctx.send(f"Class successfully registered!")
+        await ctx.send(f"Class successfully added for **{add.class_details.class_name} [{add.class_details.class_group}]**!\n**Class ID: __{add.class_id}__**")
 
     
     # For updating classes
@@ -118,7 +117,7 @@ class Classes(commands.Cog):
         base = "class",
         name = "edit",
         description = "Update details of a class using the class ID",
-        guild_ids = [536835061895397386],
+        guild_ids = [536835061895397386, 871300534999584778],
         options = [
             # Required parameter
             create_option(
@@ -181,12 +180,12 @@ class Classes(commands.Cog):
         ### FOR CLASS DETAILS
         # Replaces values in query with values in args (if applicable)
         for key in args: 
-            # Just writing 'and args[key]' would've been fine since it evaluates to the same thing, but I think it makes it unreadable
-            if (new_class_details[key] != args[key]) and (args[key] != None):
+            if (new_class_details[key] != args[key]) and (args[key] is not None):
                 new_class_details[key] = args[key]
 
-
         classes.update(set__class_details = new_class_details)
+
+        
         classes.save()
 
         await ctx.send("Class successfully edited!")
@@ -206,10 +205,31 @@ class Classes(commands.Cog):
         base = "class",
         name = "check",
         description = "Check classes using the ID that is assigned to them",
-        guild_ids = [536835061895397386]
+        guild_ids = [536835061895397386, 871300534999584778],
+        options = [
+            create_option(
+                name = "class_id",
+                description = "The ID of the class you want to edit details of",
+                option_type = 4,
+                required = True
+            )
+        ]
     )
-    async def class_check(self, ctx: SlashContext):   
-        await ctx.send("awooga")
+    async def class_check(self, ctx: SlashContext, class_id: int): 
+        classes = ClassCollection.objects.filter(class_id = class_id).first()
+
+        embed = discord.Embed(title = "**Class Link**", url = classes.class_details.link, description = f"```yaml\n{classes.class_details.link}```")
+        embed.set_author(name = f"Class Details", icon_url = "https://cdn.discordapp.com/emojis/872501924925165598.webp?size=128&quality=lossless")
+        embed.set_thumbnail(url = "https://cdn.discordapp.com/attachments/871307003111276544/936935102301220934/image_2022-01-29_184417.png")
+        embed.add_field(name = "Class ID", value = classes.class_id, inline = False)
+        embed.add_field(name = "Duration", value = f"{classes.class_details.duration} minutes", inline = True)
+        embed.add_field(name = "Class Name", value = classes.class_details.class_name, inline = True)
+        embed.add_field(name = "Group", value = classes.class_details.class_group, inline = True)
+        embed.add_field(name = "Lecturer/Tutor", value = classes.class_details.lecturer_name, inline = True)
+        embed.add_field(name = "Time", value = classes.date_time.strftime("%I:%M %p"), inline = True)
+        embed.add_field(name = "Channel", value = f"<#{classes.channel_id}>", inline = True)
+        embed.set_footer(text = "Use the /class command to check out other options to add/update/remove/check classes")  
+        await ctx.send(embed = embed)
 
 
     @cog_ext.cog_subcommand(
