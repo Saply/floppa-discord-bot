@@ -84,6 +84,7 @@ class Classes(commands.Cog):
             )
         ]
     )
+    
     # i'll add validation eventually
     async def class_add(self, ctx: SlashContext, repeatable: int, class_name: str, link: str, lecturer_name: str, group: str, duration: int, date: str, start_time: str, channel: discord.channel.TextChannel):
         # This is scuffed but trust me it works
@@ -108,7 +109,7 @@ class Classes(commands.Cog):
             )
             
         add.save()
-        
+
         await ctx.send(f"Class successfully added for **{add.class_details.class_name} [{add.class_details.class_group}]**!\n**Class ID: __{add.class_id}__**")
 
     
@@ -198,13 +199,14 @@ class Classes(commands.Cog):
         guild_ids = [536835061895397386]
     )
     async def class_remove(self, ctx: SlashContext):
+        
         await ctx.send("remove")
     
 
     @cog_ext.cog_subcommand(
         base = "class",
         name = "check",
-        description = "Check classes using the ID that is assigned to them",
+        description = "Check class details using the ID that is assigned to them",
         guild_ids = [536835061895397386, 871300534999584778],
         options = [
             create_option(
@@ -226,7 +228,7 @@ class Classes(commands.Cog):
         embed.add_field(name = "Class Name", value = classes.class_details.class_name, inline = True)
         embed.add_field(name = "Group", value = classes.class_details.class_group, inline = True)
         embed.add_field(name = "Lecturer/Tutor", value = classes.class_details.lecturer_name, inline = True)
-        embed.add_field(name = "Time", value = classes.date_time.strftime("%I:%M %p"), inline = True)
+        embed.add_field(name = "Time", value = classes.date_time.strftime("%A %I:%M %p"), inline = True)
         embed.add_field(name = "Channel", value = f"<#{classes.channel_id}>", inline = True)
         embed.set_footer(text = "Use the /class command to check out other options to add/update/remove/check classes")  
         await ctx.send(embed = embed)
@@ -236,10 +238,34 @@ class Classes(commands.Cog):
         base = "class",
         name = "list",
         description = "Check the list of all currently active classes",
-        guild_ids = [536835061895397386]
+        guild_ids = [536835061895397386, 871300534999584778]
     )
     async def class_list(self, ctx: SlashContext):
-        await ctx.send("list")
+        class_ids = ""
+        class_names = ""
+        class_groups = ""
+
+        count = 0
+        for classes in ClassCollection.objects:
+            class_ids += f"{classes.class_id}\n" if count % 2 == 0 else f"**{classes.class_id}**\n"
+            class_names += f"{classes.class_details.class_name}\n" if count % 2 == 0 else f"**{classes.class_details.class_name}**\n"
+            class_groups += f"{classes.class_details.class_group}\n" if count % 2 == 0 else f"**{classes.class_details.class_group}**\n"
+
+            count += 1
+        
+        
+        # include class ID, class name and also group
+        embed = discord.Embed(description = f"**Lorem ipsum dolor sir amet**")
+        embed.set_author(name = f"List of All Active Classes", icon_url = "https://cdn.discordapp.com/emojis/872501924925165598.webp?size=128&quality=lossless")
+
+
+        embed.add_field(name = "Class ID", value = class_ids, inline = True)
+        embed.add_field(name = "Class", value = class_names, inline = True)
+        embed.add_field(name = "Group", value = class_groups, inline = True)
+
+        embed.set_footer(text = "Use the /class command to check out other options to add/update/remove/check classes")
+
+        await ctx.send(embed = embed)
     
 
     # like and subscribe !!
@@ -250,6 +276,7 @@ class Classes(commands.Cog):
         guild_ids = [536835061895397386]
     )
     async def class_subscribe(self, ctx: SlashContext):
+        print(ctx.author_id)
         await ctx.send("subscribe")
 
     @cog_ext.cog_subcommand(
