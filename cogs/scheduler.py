@@ -8,8 +8,7 @@ class Scheduler(commands.Cog):
         self.client = client
         self.class_clock.start()
 
-    # query db every 30 minutes to check if a class is happening or not 
-    # i set it to 1 for now since i need to test things
+    # query db every x minutes to check if a class is happening or not 
     @tasks.loop(minutes = 1)
     async def class_clock(self):
         # I had to remove the microseconds and seconds because including smaller units messes up the queries
@@ -23,15 +22,16 @@ class Scheduler(commands.Cog):
         
         # For loop is used in case there are multiple classes with the same time
         for classes in classes_query:
-            embed = discord.Embed(title = "**Class Link**", url = classes.class_details.link, description = f"```yaml\n{classes.class_details.link}```")
+            temp_date = classes.date_time + dt.timedelta(minutes = 5)
+            embed = discord.Embed(title = "** ** **>>> __CLASS LINK__ <<<**", url = classes.class_details.link, description = f"```yaml\n{classes.class_details.link}```")
             embed.set_author(name = f"Class is starting!", icon_url = "https://cdn.discordapp.com/emojis/872501924925165598.webp?size=128&quality=lossless")
             embed.set_thumbnail(url = "https://cdn.discordapp.com/attachments/871307003111276544/936935102301220934/image_2022-01-29_184417.png")
-            embed.add_field(name = "Class ID", value = classes.class_id, inline = False)
+            embed.add_field(name = "Class ID", value = f"**{classes.class_id}**", inline = False)
             embed.add_field(name = "Duration", value = f"{classes.class_details.duration} minutes", inline = True)
             embed.add_field(name = "Class Name", value = classes.class_details.class_name, inline = True)
             embed.add_field(name = "Group", value = classes.class_details.class_group, inline = True)
             embed.add_field(name = "Lecturer/Tutor", value = classes.class_details.lecturer_name, inline = True)
-            embed.add_field(name = "Time", value = classes.date_time.strftime("%I:%M %p"), inline = True)
+            embed.add_field(name = "Time", value = temp_date.strftime("%A %I:%M %p"), inline = True)
             embed.add_field(name = "Channel", value = f"<#{classes.channel_id}>", inline = True)
             embed.set_footer(text = "Use the /class command to check out other options to add/update/remove/check classes")  
             
@@ -53,7 +53,7 @@ class Scheduler(commands.Cog):
     @class_clock.before_loop
     async def before(self):
         await self.client.wait_until_ready()
-
+        
 
 def setup(client: commands.Bot):
     client.add_cog(Scheduler(client))

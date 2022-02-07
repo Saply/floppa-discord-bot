@@ -1,8 +1,12 @@
-import json
-import discord, random, os, mongoengine as mdb, datetime as dt
+from multiprocessing.sharedctypes import Value
+import discord, random, os, mongoengine as mdb, datetime as dt, json, asyncio
 from discord.ext import commands, tasks
-from discord_slash import cog_ext, SlashContext, SlashCommandOptionType
+
+from discord_slash import cog_ext, SlashContext, SlashCommandOptionType, ComponentContext
 from discord_slash.utils.manage_commands import create_option, create_choice
+
+from discord_slash.model import ButtonStyle
+from discord_slash.utils.manage_components import create_actionrow, create_button, wait_for_component
 
 from data.schemas import ClassCollection, ClassDetails
 
@@ -10,8 +14,8 @@ from data.schemas import ClassCollection, ClassDetails
 class Classes(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client
-    # aaaa https://discord-py-slash-command.readthedocs.io/en/components/discord_slash.client.html?highlight=subcommand#discord_slash.client.SlashCommand.subcommand
-    # option types https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-type
+    
+
     @cog_ext.cog_subcommand(
         base = "class",
         name = "add",
@@ -84,15 +88,17 @@ class Classes(commands.Cog):
             )
         ]
     )
-    
     # i'll add validation eventually
-    async def class_add(self, ctx: SlashContext, repeatable: int, class_name: str, link: str, lecturer_name: str, group: str, duration: int, date: str, start_time: str, channel: discord.channel.TextChannel):
+    async def class_add(self, ctx: SlashContext, repeatable: int, class_name: str, link: str, lecturer_name: str, 
+                        group: str, duration: int, date: str, start_time: str, channel: discord.channel.TextChannel):
         # This is scuffed but trust me it works
         try:
             date_and_time = dt.datetime.strptime(f"{date} {start_time}", "%d-%m-%Y %I:%M %p")
         except ValueError:
             date_and_time = dt.datetime.strptime(f"{date} {start_time}", "%d-%m-%Y %I:%M%p")
         
+        date_and_time = date_and_time - dt.timedelta(minutes = 5)
+
         add = ClassCollection(
                 channel_id = channel.id,
                 repeatable = bool(repeatable),
@@ -113,7 +119,6 @@ class Classes(commands.Cog):
         await ctx.send(f"Class successfully added for **{add.class_details.class_name} [{add.class_details.class_group}]**!\n**Class ID: __{add.class_id}__**")
 
     
-    # For updating classes
     @cog_ext.cog_subcommand(
         base = "class",
         name = "edit",
@@ -157,12 +162,52 @@ class Classes(commands.Cog):
                 description = "Enter the duration of the class in minutes (eg. 60, 120, 1440)",
                 option_type = 4,
                 required = False
+            ),
+            create_option(
+                name = "date_and_time",
+                description = "Enter the date of the class in DD-MM-YYYY format and time (eg. 12-12-2022 9:03 AM)",
+                option_type = 3,
+                required = False
+            ),
+            create_option(
+                name = "channel",
+                description = "Tag the channel you want the bot to post reminders in (eg. #fci, #fist, #general)",
+                option_type = 7,
+                required = False
             )
         ]
     )
-    # TODO: Do the same for changing channels and datetime as well
-    async def class_edit(self, ctx: SlashContext, class_id: int, class_name: str = None, link: str = None, 
-                         lecturer_name: str = None, group: str = None, duration: int = None):
+    async def class_edit(self, ctx: SlashContext, class_id: int, class_name: str = None, link: str = None, lecturer_name: str = None, 
+                         group: str = None, duration: int = None, date_and_time: str = None, channel: discord.channel.TextChannel = None):
+        # Query result of class_id integer
+        classes: ClassCollection = ClassCollection.objects.filter(class_id = class_id).first()
+
+        if not classes:
+            await ctx.send("No such class ID exists!")
+            return
+
+        query = json.loads(classes.to_json())
+        
+        ### For date and time 
+        current_date_time = classes.date_time  
+       
+        try:
+            new_date_time = dt.datetime.strptime(date_and_time, "%d-%m-%Y %I:%M %p")
+        except ValueError:
+            new_date_time = dt.datetime.strptime(date_and_time, "%d-%m-%Y %I:%M%p")
+
+        if (current_date_time != date_and_time) and (date_and_time is not None):
+            new_date_time -= dt.timedelta(minutes = 5)
+            classes.update(set__date_time = new_date_time)
+        
+
+        ### For channel
+        current_channel = classes.channel_id 
+        if (current_channel != channel) and (channel is not None):
+            classes.update(set__channel_id = channel.id)
+        
+
+        ### For class details
         args = {
             'class_name': class_name,
             'class_group': group,
@@ -171,15 +216,8 @@ class Classes(commands.Cog):
             'lecturer_name': lecturer_name
         }
 
-        # Query result of class_id integer
-        classes = ClassCollection.objects.filter(class_id = class_id).first()
-        query = json.loads(classes.to_json())
-        new_date_time = query['date_time']
-        new_channel = query['channel_id']
         new_class_details = query['class_details']
-        
-        ### FOR CLASS DETAILS
-        # Replaces values in query with values in args (if applicable)
+
         for key in args: 
             if (new_class_details[key] != args[key]) and (args[key] is not None):
                 new_class_details[key] = args[key]
@@ -196,11 +234,64 @@ class Classes(commands.Cog):
         base = "class",
         name = "remove",
         description = "Remove classes using their ID",
-        guild_ids = [536835061895397386]
+        guild_ids = [536835061895397386, 871300534999584778],
+        options = [
+            create_option(
+                name = "class_id",
+                description = "The ID of the class you want to delete",
+                option_type = 4,
+                required = True
+            )
+        ]
     )
-    async def class_remove(self, ctx: SlashContext):
+    async def class_remove(self, ctx: SlashContext, class_id: int):
+        # Create embed
+        classes: ClassCollection = ClassCollection.objects.filter(class_id = class_id).first()
+        if not classes:
+            await ctx.send("No such class ID exists!")
+            return
         
-        await ctx.send("remove")
+        temp_date: dt.datetime = classes.date_time + dt.timedelta(minutes = 5)
+        embed = discord.Embed(title = "Class Details", description = f"```yaml\n{classes.class_details.link}```", color = 0xdb161d)
+        embed.set_thumbnail(url = "https://cdn.discordapp.com/attachments/871307003111276544/936935102301220934/image_2022-01-29_184417.png")
+        embed.add_field(name = "Duration", value = f"{classes.class_details.duration} minutes", inline = True)
+        embed.add_field(name = "Class Name", value = classes.class_details.class_name, inline = True)
+        embed.add_field(name = "Group", value = classes.class_details.class_group, inline = True)
+        embed.add_field(name = "Lecturer/Tutor", value = classes.class_details.lecturer_name, inline = True)
+        embed.add_field(name = "Time", value = temp_date.strftime("%A %I:%M %p"), inline = True)
+        embed.add_field(name = "Channel", value = f"<#{classes.channel_id}>", inline = True)
+
+
+        # Button component
+        buttons = [
+            create_button(style = ButtonStyle.green, label = "Yes, I want to delete this class", custom_id = "yes"),
+            create_button(style = ButtonStyle.danger, label = "No! I don't want that! Not for another 10 years at least!", custom_id = "no"),
+            create_button(style = ButtonStyle.gray, label = "Cancel", custom_id = "cancel")
+        ]
+        action_row = create_actionrow(*buttons)
+
+        confirmation = await ctx.send("Are you sure you want to delete this class?", embed = embed, components=[action_row])
+        
+        try:
+            button_ctx: ComponentContext = await wait_for_component(self.client, components = action_row, timeout = 8)
+
+
+            if button_ctx.custom_id == "yes":
+                classes.delete()
+                await ctx.send("Class successfully removed!")
+
+            elif button_ctx.custom_id == "no":
+                await ctx.send(f"Class removal cancelled <@{ctx.author_id}>")
+
+            else:
+                await ctx.send(f"seems like you cancelled it idiot <@{ctx.author_id}>")
+
+            await confirmation.delete()
+        
+        except asyncio.TimeoutError:
+            await confirmation.delete()
+            await ctx.send("Class removal process timed out, damn you're slow as hell fr")
+       
     
 
     @cog_ext.cog_subcommand(
@@ -218,17 +309,21 @@ class Classes(commands.Cog):
         ]
     )
     async def class_check(self, ctx: SlashContext, class_id: int): 
-        classes = ClassCollection.objects.filter(class_id = class_id).first()
+        classes: ClassCollection = ClassCollection.objects.filter(class_id = class_id).first()
+        if not classes:
+            await ctx.send("No such class ID exists!")
+            return
 
-        embed = discord.Embed(title = "**Class Link**", url = classes.class_details.link, description = f"```yaml\n{classes.class_details.link}```")
+        temp_date: dt.datetime = classes.date_time + dt.timedelta(minutes = 5)
+        embed = discord.Embed(title = "** ** **>>> __CLASS LINK__ <<<**", url = classes.class_details.link, description = f"```yaml\n{classes.class_details.link}```", color = 0x9e30d1)
         embed.set_author(name = f"Class Details", icon_url = "https://cdn.discordapp.com/emojis/872501924925165598.webp?size=128&quality=lossless")
         embed.set_thumbnail(url = "https://cdn.discordapp.com/attachments/871307003111276544/936935102301220934/image_2022-01-29_184417.png")
-        embed.add_field(name = "Class ID", value = classes.class_id, inline = False)
+        embed.add_field(name = "Class ID", value = f"**{classes.class_id}**", inline = False)
         embed.add_field(name = "Duration", value = f"{classes.class_details.duration} minutes", inline = True)
         embed.add_field(name = "Class Name", value = classes.class_details.class_name, inline = True)
         embed.add_field(name = "Group", value = classes.class_details.class_group, inline = True)
         embed.add_field(name = "Lecturer/Tutor", value = classes.class_details.lecturer_name, inline = True)
-        embed.add_field(name = "Time", value = classes.date_time.strftime("%A %I:%M %p"), inline = True)
+        embed.add_field(name = "Time", value = temp_date.strftime("%A %I:%M %p"), inline = True)
         embed.add_field(name = "Channel", value = f"<#{classes.channel_id}>", inline = True)
         embed.set_footer(text = "Use the /class command to check out other options to add/update/remove/check classes")  
         await ctx.send(embed = embed)
@@ -254,8 +349,7 @@ class Classes(commands.Cog):
             count += 1
         
         
-        # include class ID, class name and also group
-        embed = discord.Embed(description = f"**Lorem ipsum dolor sir amet**")
+        embed = discord.Embed(description = f"Use `/class check` to check details of each class", color = 0x3aded6)
         embed.set_author(name = f"List of All Active Classes", icon_url = "https://cdn.discordapp.com/emojis/872501924925165598.webp?size=128&quality=lossless")
 
 

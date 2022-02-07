@@ -3,7 +3,11 @@ from mongoengine import connect
 from dotenv import load_dotenv
 from discord.ext import commands, tasks
 from discord_slash import SlashCommand, SlashContext
-from discord_slash.utils.manage_commands import create_choice, create_option, create_permission
+
+
+from discord_slash.utils.manage_components import create_button, create_actionrow, ComponentContext, create_select, create_select_option
+from discord_slash.model import ButtonStyle
+# https://pypi.org/project/discord-py-slash-command/
 
 # token client stuff
 load_dotenv()
@@ -17,14 +21,20 @@ client = commands.Bot(command_prefix = '!')
 slash = SlashCommand(client, sync_commands = True)
 
 
-# done using callbacks
-@client.event
 # Called when the bot is ready to be used
+@client.event
 async def on_ready():
     print(f'{client.user} has connected to Discord!')
 
-        
+async def status():
+    await client.wait_until_ready()
+    await client.change_presence(status = discord.Status.online, activity = discord.Game(name = "If something here doesn't work then you know who to blame"))
+    return 
 
+client.loop.create_task(status())
+
+
+# use waybackmachine to read docs (wtf)
 # https://discordpy.readthedocs.io/en/latest/ext/tasks/index.html
 
 
