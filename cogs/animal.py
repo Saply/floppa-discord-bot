@@ -1,7 +1,10 @@
-import discord, random, os, asyncio
+import random, os
+
+import discord
 from discord.ext import commands, tasks
 from discord_slash import cog_ext, SlashContext
 from discord_slash.utils.manage_commands import create_option, create_choice
+
 
 class Animal(commands.Cog):
     def __init__(self, client: commands.Bot):
@@ -10,7 +13,7 @@ class Animal(commands.Cog):
     @cog_ext.cog_slash(
         name = "post_animal",
         description = "Posts a random animal image of your choice",
-        guild_ids = [536835061895397386, 871300534999584778],
+        guild_ids = [871300534999584778, 536835061895397386],
         options = [
             create_option(
                 name = "animal",

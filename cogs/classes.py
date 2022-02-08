@@ -1,11 +1,10 @@
-from multiprocessing.sharedctypes import Value
-import discord, random, os, mongoengine as mdb, datetime as dt, json, asyncio
+import json, asyncio, datetime as dt
+
+import discord
 from discord.ext import commands, tasks
-
-from discord_slash import cog_ext, SlashContext, SlashCommandOptionType, ComponentContext
-from discord_slash.utils.manage_commands import create_option, create_choice
-
+from discord_slash import cog_ext, SlashContext, ComponentContext
 from discord_slash.model import ButtonStyle
+from discord_slash.utils.manage_commands import create_option, create_choice
 from discord_slash.utils.manage_components import create_actionrow, create_button, wait_for_component
 
 from data.schemas import ClassCollection, ClassDetails
@@ -20,7 +19,7 @@ class Classes(commands.Cog):
         base = "class",
         name = "add",
         description = "Add classes with these wide variety of options!!!",
-        guild_ids = [536835061895397386, 871300534999584778],
+        guild_ids = [871300534999584778, 536835061895397386],
         options = [
             create_option(
                 name = "repeatable",
@@ -88,7 +87,6 @@ class Classes(commands.Cog):
             )
         ]
     )
-    # i'll add validation eventually
     async def class_add(self, ctx: SlashContext, repeatable: int, class_name: str, link: str, lecturer_name: str, 
                         group: str, duration: int, date: str, start_time: str, channel: discord.channel.TextChannel):
         # This is scuffed but trust me it works
@@ -123,7 +121,7 @@ class Classes(commands.Cog):
         base = "class",
         name = "edit",
         description = "Update details of a class using the class ID",
-        guild_ids = [536835061895397386, 871300534999584778],
+        guild_ids = [871300534999584778, 536835061895397386],
         options = [
             # Required parameter
             create_option(
@@ -234,7 +232,7 @@ class Classes(commands.Cog):
         base = "class",
         name = "remove",
         description = "Remove classes using their ID",
-        guild_ids = [536835061895397386, 871300534999584778],
+        guild_ids = [871300534999584778, 536835061895397386],
         options = [
             create_option(
                 name = "class_id",
@@ -279,15 +277,14 @@ class Classes(commands.Cog):
             if button_ctx.custom_id == "yes":
                 classes.delete()
                 await ctx.send("Class successfully removed!")
-
             elif button_ctx.custom_id == "no":
                 await ctx.send(f"Class removal cancelled <@{ctx.author_id}>")
-
             else:
                 await ctx.send(f"seems like you cancelled it idiot <@{ctx.author_id}>")
 
             await confirmation.delete()
         
+
         except asyncio.TimeoutError:
             await confirmation.delete()
             await ctx.send("Class removal process timed out, damn you're slow as hell fr")
@@ -298,7 +295,7 @@ class Classes(commands.Cog):
         base = "class",
         name = "check",
         description = "Check class details using the ID that is assigned to them",
-        guild_ids = [536835061895397386, 871300534999584778],
+        guild_ids = [871300534999584778, 536835061895397386],
         options = [
             create_option(
                 name = "class_id",
@@ -333,7 +330,7 @@ class Classes(commands.Cog):
         base = "class",
         name = "list",
         description = "Check the list of all currently active classes",
-        guild_ids = [536835061895397386, 871300534999584778]
+        guild_ids = [871300534999584778, 536835061895397386]
     )
     async def class_list(self, ctx: SlashContext):
         class_ids = ""
@@ -362,25 +359,46 @@ class Classes(commands.Cog):
         await ctx.send(embed = embed)
     
 
-    # like and subscribe !!
+    # Notify
     @cog_ext.cog_subcommand(
         base = "class",
         name = "subscribe",
         description = "Choose which class you want to be pinged for",
-        guild_ids = [536835061895397386]
+        guild_ids = [871300534999584778, 536835061895397386],
+        options = [
+            create_option(
+                name = "class_id",
+                description = "The ID of the class you want to be pinged for",
+                option_type = 4,
+                required = True
+            )
+        ]
     )
-    async def class_subscribe(self, ctx: SlashContext):
-        print(ctx.author_id)
-        await ctx.send("subscribe")
+    async def class_subscribe(self, ctx: SlashContext, class_id: int):
+        classes: ClassCollection = ClassCollection.objects.filter(class_id = class_id).first()
+        classes.update(add_to_set__notify = ctx.author_id, upsert = True)
+        await ctx.send(f"<@{ctx.author_id}> You have been subscribed to receive notifications for **{classes.class_details.class_name} [{classes.class_details.class_group}]**")
+
 
     @cog_ext.cog_subcommand(
         base = "class",
         name = "unsubscribe",
-        description = "Unchoose which class you want to be pinged for (i'll make a better description eventually)",
-        guild_ids = [536835061895397386]
+        description = "Choose which class you don't want to be pinged for anymore",
+        guild_ids = [536835061895397386, 871300534999584778],
+        options = [
+            create_option(
+                name = "class_id",
+                description = "The ID of the class you don't want to be notified for",
+                option_type = 4,
+                required = True
+            )
+        ]
     )
-    async def class_unsubscribe(self, ctx: SlashContext):
-        await ctx.send("unsubscribe")
+    async def class_unsub(self, ctx: SlashContext, class_id: int):
+        classes: ClassCollection = ClassCollection.objects.filter(class_id = class_id).first()
+        classes.update(pull__notify = ctx.author_id, upsert = True)
+        await ctx.send(f"<@{ctx.author_id}> You have been unsubscribed from receiving notifications for **{classes.class_details.class_name} [{classes.class_details.class_group}]**")
+    
     
     
 def setup(client: commands.Bot):

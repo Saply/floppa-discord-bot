@@ -1,7 +1,7 @@
-# probably merge this with other relevant files or just put anything that requires tasks.loops inside this file
 import discord, datetime as dt
 from discord.ext import commands, tasks 
-from data.schemas import *
+
+from data.schemas import ClassCollection
 
 class Scheduler(commands.Cog):
     def __init__(self, client: commands.Bot):
@@ -11,7 +11,6 @@ class Scheduler(commands.Cog):
     # query db every x minutes to check if a class is happening or not 
     @tasks.loop(minutes = 1)
     async def class_clock(self):
-        # I had to remove the microseconds and seconds because including smaller units messes up the queries
         current_time = dt.datetime.now().replace(microsecond = 0, second = 0)
         
         classes_query = ClassCollection.objects.filter(date_time = current_time)
@@ -35,10 +34,10 @@ class Scheduler(commands.Cog):
             embed.add_field(name = "Channel", value = f"<#{classes.channel_id}>", inline = True)
             embed.set_footer(text = "Use the /class command to check out other options to add/update/remove/check classes")  
             
-            
+            notifications = ' '.join(f"<@{str(id)}>" for id in classes.notify)
             # Gets channel to post class in from database
             discord_channel = self.client.get_channel(classes.channel_id)
-            await discord_channel.send(embed = embed)
+            await discord_channel.send(content = notifications, embed = embed)
             
             # Checks if the class is repeated or not
             # If it is repeated, update the date with the same time but for next week

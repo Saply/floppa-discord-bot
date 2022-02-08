@@ -8,6 +8,7 @@ class ClassDetails(EmbeddedDocument):
 
     link = URLField()
     lecturer_name = StringField()
+    ImageField
 
     meta = {
         'strict': False
@@ -21,14 +22,11 @@ class ClassCollection(Document):
     date_time = DateTimeField()
     repeatable = BooleanField()
 
-    # Users to ping when there's a class
     notify = ListField(LongField())
 
     class_details = EmbeddedDocumentField(ClassDetails)
     
-    # do meta indexing for link and start time 
-    # https://mongoengine-odm.readthedocs.io/apireference.html#mongoengine.Document
-    # https://mongoengine-odm.readthedocs.io/apireference.html#mongoengine.FieldDoesNotExist
+   
     
     
     meta = {
