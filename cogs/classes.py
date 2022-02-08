@@ -188,15 +188,16 @@ class Classes(commands.Cog):
         
         ### For date and time 
         current_date_time = classes.date_time  
-       
-        try:
-            new_date_time = dt.datetime.strptime(date_and_time, "%d-%m-%Y %I:%M %p")
-        except ValueError:
-            new_date_time = dt.datetime.strptime(date_and_time, "%d-%m-%Y %I:%M%p")
 
-        if (current_date_time != date_and_time) and (date_and_time is not None):
-            new_date_time -= dt.timedelta(minutes = 5)
-            classes.update(set__date_time = new_date_time)
+        if date_and_time is not None:
+            try:
+                new_date_time = dt.datetime.strptime(date_and_time, "%d-%m-%Y %I:%M %p")
+            except ValueError:
+                new_date_time = dt.datetime.strptime(date_and_time, "%d-%m-%Y %I:%M%p")
+
+            if (current_date_time != date_and_time) and (date_and_time is not None):
+                new_date_time -= dt.timedelta(minutes = 5)
+                classes.update(set__date_time = new_date_time)
         
 
         ### For channel
