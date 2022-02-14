@@ -14,7 +14,6 @@ class Classes(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client
     
-
     @cog_ext.cog_subcommand(
         base = "class",
         name = "add",
@@ -377,8 +376,52 @@ class Classes(commands.Cog):
     )
     async def class_subscribe(self, ctx: SlashContext, class_id: int):
         classes: ClassCollection = ClassCollection.objects.filter(class_id = class_id).first()
+        
+        if not classes:
+            await ctx.send("No such class ID exists!")
+            return
+        
         classes.update(add_to_set__notify = ctx.author_id, upsert = True)
         await ctx.send(f"<@{ctx.author_id}> You have been subscribed to receive notifications for **{classes.class_details.class_name} [{classes.class_details.class_group}]**")
+
+    @cog_ext.cog_subcommand(
+        base = "class",
+        name = "subscribemany",
+        description = "Subscribe to many classes at once",
+        guild_ids = [536835061895397386, 871300534999584778],
+        options = [
+            create_option(
+                name = "class_ids",
+                description = "List down multiple class IDs separated by space (eg. '1 3 5 7 10')",
+                option_type = 3,
+                required = True
+            )
+        ]
+    )
+    async def subscribe_many(self, ctx: SlashContext, class_ids: str):
+        class_ids_list: list = [int(i) for i in class_ids.split()]
+
+        successful_subscriptions = []
+        unsuccessful_subscriptions = []
+        for class_id in class_ids_list:
+            classes: ClassCollection = ClassCollection.objects.filter(class_id = class_id).first()
+
+            if not classes:
+                unsuccessful_subscriptions.append(f"**{class_id}**, ")
+            else:
+                classes.update(add_to_set__notify = ctx.author_id, upsert = True)
+                successful_subscriptions.append(f"**{classes.class_details.class_name} [{classes.class_details.class_group}]**, ")
+        
+        content = ""
+        if successful_subscriptions is not None:
+            content += f"You have been subscribed to receive notifications for: {' '.join(successful_subscriptions)[:-2]}\n"
+
+        if unsuccessful_subscriptions is not None:
+            content += f"The following class IDs do not exist:  {' '.join(unsuccessful_subscriptions)}"[:-2]
+
+        await ctx.send(f"<@{ctx.author_id}> {content}")
+        
+       
 
 
     @cog_ext.cog_subcommand(
@@ -397,6 +440,11 @@ class Classes(commands.Cog):
     )
     async def class_unsub(self, ctx: SlashContext, class_id: int):
         classes: ClassCollection = ClassCollection.objects.filter(class_id = class_id).first()
+
+        if not classes:
+            await ctx.send("No such class ID exists!")
+            return
+        
         classes.update(pull__notify = ctx.author_id, upsert = True)
         await ctx.send(f"<@{ctx.author_id}> You have been unsubscribed from receiving notifications for **{classes.class_details.class_name} [{classes.class_details.class_group}]**")
     
