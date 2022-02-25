@@ -262,9 +262,8 @@ class Classes(commands.Cog):
 
         # Button component
         buttons = [
-            create_button(style = ButtonStyle.green, label = "Yes, I want to delete this class", custom_id = "yes"),
-            create_button(style = ButtonStyle.danger, label = "No! I don't want that! Not for another 10 years at least!", custom_id = "no"),
-            create_button(style = ButtonStyle.gray, label = "Cancel", custom_id = "cancel")
+            create_button(style = ButtonStyle.green, label = "Yes, I want to delete this class", custom_id = "yes", emoji = "✔"),
+            create_button(style = ButtonStyle.danger, label = "No! I don't want that! ", custom_id = "no", emoji = "✖")
         ]
         action_row = create_actionrow(*buttons)
 
@@ -276,15 +275,12 @@ class Classes(commands.Cog):
 
             if button_ctx.custom_id == "yes":
                 classes.delete()
-                await ctx.send("Class successfully removed!")
-            elif button_ctx.custom_id == "no":
-                await ctx.send(f"Class removal cancelled <@{ctx.author_id}>")
+                await ctx.send(f"Class successfully removed! <@{ctx.author_id}>")
             else:
-                await ctx.send(f"seems like you cancelled it idiot <@{ctx.author_id}>")
-
+                await ctx.send(f"Class removal cancelled <@{ctx.author_id}>")
+ 
             await confirmation.delete()
         
-
         except asyncio.TimeoutError:
             await confirmation.delete()
             await ctx.send("Class removal process timed out, damn you're slow as hell fr")
@@ -384,6 +380,7 @@ class Classes(commands.Cog):
         classes.update(add_to_set__notify = ctx.author_id, upsert = True)
         await ctx.send(f"<@{ctx.author_id}> You have been subscribed to receive notifications for **{classes.class_details.class_name} [{classes.class_details.class_group}]**")
 
+
     @cog_ext.cog_subcommand(
         base = "class",
         name = "subscribemany",
@@ -392,7 +389,7 @@ class Classes(commands.Cog):
         options = [
             create_option(
                 name = "class_ids",
-                description = "List down multiple class IDs separated by space (eg. '1 3 5 7 10')",
+                description = "List down multiple class IDs separated by space (eg. /class subscribemany class_ids: 1 3 5 7 10)",
                 option_type = 3,
                 required = True
             )
@@ -412,18 +409,11 @@ class Classes(commands.Cog):
                 classes.update(add_to_set__notify = ctx.author_id, upsert = True)
                 successful_subscriptions.append(f"**{classes.class_details.class_name} [{classes.class_details.class_group}]**, ")
         
-        content = ""
-        if successful_subscriptions is not None:
-            content += f"You have been subscribed to receive notifications for: {' '.join(successful_subscriptions)[:-2]}\n"
-
-        if unsuccessful_subscriptions is not None:
-            content += f"The following class IDs do not exist:  {' '.join(unsuccessful_subscriptions)}"[:-2]
+        content = f"You have been subscribed to receive notifications for: {' '.join(successful_subscriptions)[:-2] if successful_subscriptions else '**-**'}\nThe following class IDs do not exist:  {' '.join(unsuccessful_subscriptions)[:-2] if unsuccessful_subscriptions else '**-**'}"
 
         await ctx.send(f"<@{ctx.author_id}> {content}")
         
        
-
-
     @cog_ext.cog_subcommand(
         base = "class",
         name = "unsubscribe",
@@ -448,7 +438,38 @@ class Classes(commands.Cog):
         classes.update(pull__notify = ctx.author_id, upsert = True)
         await ctx.send(f"<@{ctx.author_id}> You have been unsubscribed from receiving notifications for **{classes.class_details.class_name} [{classes.class_details.class_group}]**")
     
-    
+    @cog_ext.cog_subcommand(
+        base = "class",
+        name = "subscribelist",
+        description = "Check the list of which classes you wish to be notified for",
+        guild_ids = [536835061895397386, 871300534999584778]
+    )
+    async def class_subscribelist(self, ctx: SlashContext):
+        class_ids = ""
+        class_names = ""
+        class_groups = ""
+
+        count = 0
+        for classes in ClassCollection.objects.filter(notify__in = [ctx.author_id]):
+            class_ids += f"{classes.class_id}\n" if count % 2 == 0 else f"**{classes.class_id}**\n"
+            class_names += f"{classes.class_details.class_name}\n" if count % 2 == 0 else f"**{classes.class_details.class_name}**\n"
+            class_groups += f"{classes.class_details.class_group}\n" if count % 2 == 0 else f"**{classes.class_details.class_group}**\n"
+
+            count += 1
+        
+        embed = discord.Embed(description = f"Use `/class check` to check details of each class", color = 0x3aded6)
+        embed.set_author(name = f"List of Classes {ctx.author} is subscribed to", icon_url = "https://cdn.discordapp.com/emojis/872501924925165598.webp?size=128&quality=lossless")
+
+
+        embed.add_field(name = "Class ID", value = class_ids, inline = True)
+        embed.add_field(name = "Class", value = class_names, inline = True)
+        embed.add_field(name = "Group", value = class_groups, inline = True)
+
+        embed.set_footer(text = "Use the /class command to check out other options to add/update/remove/check classes")
+
+        await ctx.send(f"<@{ctx.author_id}>", embed = embed)
+
+
     
 def setup(client: commands.Bot):
     client.add_cog(Classes(client))
