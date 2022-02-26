@@ -1,4 +1,6 @@
-import discord, datetime as dt
+import datetime as dt
+
+from discord import Embed
 from discord.ext import commands, tasks 
 
 from data.schemas import ClassCollection
@@ -22,7 +24,7 @@ class Scheduler(commands.Cog):
         # For loop is used in case there are multiple classes with the same time
         for classes in classes_query:
             temp_date = classes.date_time + dt.timedelta(minutes = 5)
-            embed = discord.Embed(title = "** ** **>>> __CLASS LINK__ <<<**", url = classes.class_details.link, description = f"```yaml\n{classes.class_details.link}```")
+            embed = Embed(title = "** ** **>>> __CLASS LINK__ <<<**", url = classes.class_details.link, description = f"```yaml\n{classes.class_details.link}```")
             embed.set_author(name = f"Class is starting!", icon_url = "https://cdn.discordapp.com/emojis/872501924925165598.webp?size=128&quality=lossless")
             embed.set_thumbnail(url = "https://cdn.discordapp.com/attachments/871307003111276544/936935102301220934/image_2022-01-29_184417.png")
             embed.add_field(name = "Class ID", value = f"**{classes.class_id}**", inline = False)

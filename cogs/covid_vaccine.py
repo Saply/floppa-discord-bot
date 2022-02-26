@@ -1,23 +1,25 @@
-import discord, datetime, pandas as pd, numpy as np, matplotlib.pyplot as plt
-from discord.ext import commands
-from discord_slash import cog_ext, SlashContext
+import datetime as dt
 
+import discord, pandas as pd, numpy as np, matplotlib.pyplot as plt
+from discord.ext import commands
+from discord.commands import slash_command, ApplicationContext
 
 class Vaccine(commands.Cog):
     def __init__(self, client):
         self.client = client
         
-        # Only initialised once since its always gonna be inaccurate fr fr
-        self.yesterday = datetime.date.today() - datetime.timedelta(days = 1)
+        # Only initialised once 
+        self.yesterday = dt.date.today() - dt.timedelta(days = 1)
         self.dataGetter() 
         self.vaccineGraphPlot()
 
     def dataGetter(self):
         # Overwrites the date with yesterday
-        self.yesterday = datetime.date.today() - datetime.timedelta(days = 1)
+        self.yesterday = dt.date.today() - dt.timedelta(days = 1)
 
         # Converts CSV data into lists
-        vaccination_by_state = pd.read_csv(r'https://raw.githubusercontent.com/CITF-Malaysia/citf-public/main/vaccination/vax_state.csv').tail(16)
+        vaccination_by_state: pd.DataFrame = pd.read_csv(r'https://raw.githubusercontent.com/CITF-Malaysia/citf-public/main/vaccination/vax_state.csv').tail(16)
+        
         self._daily_first_dose = vaccination_by_state['daily_partial'].tolist()
         self._daily_second_dose = vaccination_by_state['daily_full'].tolist()
         self._daily_booster = vaccination_by_state['daily_booster'].tolist()
@@ -60,7 +62,7 @@ class Vaccine(commands.Cog):
         plt.rc('legend', fontsize = 4.5)
         plt.legend(loc = 'best')
         
-        # Honestly I have no idea what these do but without them, the graph doesn't display properly
+        # Make the graph display properly or else the text will cut out
         plt.tick_params(labelsize = 5)
         plt.tight_layout()
 
@@ -68,18 +70,17 @@ class Vaccine(commands.Cog):
         plt.savefig("images/_graphs/vaccination-by-state.png")
     
     
-    # /vaccine slash command
-    @cog_ext.cog_slash(
+    @slash_command(
         name = "vaccine", 
-        description = "Sends the latest vaccination data from PICK", 
-        guild_ids = [536835061895397386])
-    async def vaccine(self, ctx: SlashContext):
+        description = "Sends the latest vaccination data from PICK",
+        guild_ids = [871300534999584778, 536835061895397386]
+        )
+    async def vaccine(self, ctx: ApplicationContext):
         # Reset each time (in case its a new day in which new data got added to the csv file), if not it will just use the current data 
-        if self.yesterday != datetime.date.today() - datetime.timedelta(days = 1):
+        if self.yesterday != dt.date.today() - dt.timedelta(days = 1):
             self.dataGetter()
             self.vaccineGraphPlot()
         
-         # ...yeah
         daily_first_dose = ""
         daily_second_dose = ""
         daily_booster = ""
@@ -119,5 +120,5 @@ class Vaccine(commands.Cog):
         await ctx.send(file = graph_img_file, embed = vaxEmbed, hidden = False)
 
         
-def setup(client):
+def setup(client: commands.Bot):
     client.add_cog(Vaccine(client))

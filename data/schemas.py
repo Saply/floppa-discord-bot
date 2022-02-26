@@ -25,9 +25,7 @@ class ClassCollection(Document):
     notify = ListField(LongField())
 
     class_details = EmbeddedDocumentField(ClassDetails)
-    
-   
-    
+
     
     meta = {
         'collection': 'class_collection',
