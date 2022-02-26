@@ -88,7 +88,7 @@ class Classes(commands.Cog):
         classes: ClassCollection = ClassCollection.objects.filter(class_id = class_id).first()
 
         if not classes:
-            await ctx.send("No such class ID exists!")
+            await ctx.respond("No such class ID exists!")
             return
 
         query = json.loads(classes.to_json())
@@ -161,7 +161,7 @@ class Classes(commands.Cog):
         async def button_callback(interaction: Interaction):
             button_choice = interaction.data['custom_id']
             if button_choice == "yes":
-                await interaction.response.send_message(f"<@{ctx.author.id}> **{classes.class_details.class_name} [{classes.class_details.class_group}] has successfully been deleted!**")
+                await interaction.response.send_message(f"<@{ctx.author.id}> **{classes.class_details.class_name} [{classes.class_details.class_group}]** has been successfully deleted!")
                 classes.delete()
             else:
                 await interaction.response.send_message(f"<@{ctx.author.id}> Class removal cancelled")
@@ -187,7 +187,7 @@ class Classes(commands.Cog):
     ): 
         classes: ClassCollection = ClassCollection.objects.filter(class_id = class_id).first()
         if not classes:
-            await ctx.send("No such class ID exists!")
+            await ctx.respond("No such class ID exists!")
             return
 
         temp_date: dt.datetime = classes.date_time + dt.timedelta(minutes = 5)
@@ -240,11 +240,11 @@ class Classes(commands.Cog):
         classes: ClassCollection = ClassCollection.objects.filter(class_id = class_id).first()
         
         if not classes:
-            await ctx.send("No such class ID exists!")
+            await ctx.respond("No such class ID exists!")
             return
         
-        classes.update(add_to_set__notify = ctx.author_id, upsert = True)
-        await ctx.respond(f"<@{ctx.author_id}> You have been subscribed to receive notifications for **{classes.class_details.class_name} [{classes.class_details.class_group}]**")
+        classes.update(add_to_set__notify = ctx.author.id, upsert = True)
+        await ctx.respond(f"<@{ctx.author.id}> You have been subscribed to receive notifications for **{classes.class_details.class_name} [{classes.class_details.class_group}]**")
 
     
     @class_sub.command(name = "subscribemany", description = "Subscribe to many classes at once")
@@ -261,12 +261,12 @@ class Classes(commands.Cog):
             if not classes:
                 unsuccessful_subscriptions.append(f"**{class_id}**, ")
             else:
-                classes.update(add_to_set__notify = ctx.author_id, upsert = True)
+                classes.update(add_to_set__notify = ctx.author.id, upsert = True)
                 successful_subscriptions.append(f"**{classes.class_details.class_name} [{classes.class_details.class_group}]**, ")
         
         content = f"You have been subscribed to receive notifications for: {' '.join(successful_subscriptions)[:-2] if successful_subscriptions else '**-**'}\nThe following class IDs do not exist:  {' '.join(unsuccessful_subscriptions)[:-2] if unsuccessful_subscriptions else '**-**'}"
 
-        await ctx.respond(f"<@{ctx.author_id}> {content}")
+        await ctx.respond(f"<@{ctx.author.id}> {content}")
 
 
     @class_sub.command(name = "subscribelist", description = "Check the list of which classes you wish to be notified for")
@@ -276,7 +276,7 @@ class Classes(commands.Cog):
         class_groups = ""
 
         count = 0
-        for classes in ClassCollection.objects.filter(notify__in = [ctx.author_id]):
+        for classes in ClassCollection.objects.filter(notify__in = [ctx.author.id]):
             class_ids += f"{classes.class_id}\n" if count % 2 == 0 else f"**{classes.class_id}**\n"
             class_names += f"{classes.class_details.class_name}\n" if count % 2 == 0 else f"**{classes.class_details.class_name}**\n"
             class_groups += f"{classes.class_details.class_group}\n" if count % 2 == 0 else f"**{classes.class_details.class_group}**\n"
@@ -284,7 +284,7 @@ class Classes(commands.Cog):
             count += 1
         
         embed = Embed(description = f"Use `/class check` to check details of each class", color = 0x3aded6)
-        embed.set_author(name = f"List of Classes {ctx.author} is subscribed to", icon_url = "https://cdn.discordapp.com/emojis/872501924925165598.webp?size=128&quality=lossless")
+        embed.set_author(name = f"List of Classes {str(ctx.author)[:-5]} is subscribed to", icon_url = ctx.author.avatar)
 
 
         embed.add_field(name = "Class ID", value = class_ids, inline = True)
@@ -293,7 +293,7 @@ class Classes(commands.Cog):
 
         embed.set_footer(text = "Use the /class command to check out other options to add/update/remove/check classes")
 
-        await ctx.respond(f"<@{ctx.author_id}>", embed = embed)
+        await ctx.respond(f"<@{ctx.author.id}>", embed = embed)
 
     @class_sub.command(name = "unsubscribe", description = "Choose which class you don't want to be pinged for anymore")
     async def class_unsub(self, ctx: ApplicationContext, 
@@ -302,11 +302,11 @@ class Classes(commands.Cog):
         classes: ClassCollection = ClassCollection.objects.filter(class_id = class_id).first()
         
         if not classes:
-            await ctx.send("No such class ID exists!")
+            await ctx.respond("No such class ID exists!")
             return
         
-        classes.update(pull__notify = ctx.author_id, upsert = True)
-        await ctx.respond(f"<@{ctx.author_id}> You have been unsubscribed from receiving notifications for **{classes.class_details.class_name} [{classes.class_details.class_group}]**")
+        classes.update(pull__notify = ctx.author.id, upsert = True)
+        await ctx.respond(f"<@{ctx.author.id}> You have been unsubscribed from receiving notifications for **{classes.class_details.class_name} [{classes.class_details.class_group}]**")
 
     
 def setup(client: commands.Bot):
