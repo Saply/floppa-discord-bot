@@ -1,8 +1,8 @@
 import json, asyncio, datetime as dt
 
 import discord
-from discord import ButtonStyle, File, Embed, TextChannel
-from discord.ext import commands
+from discord import ButtonStyle, File, Embed, HTTPException, TextChannel
+from discord.ext import commands, pages
 from discord.commands import ApplicationContext, SlashCommandGroup, Option, OptionChoice
 
 # import actionrow buttons and selectmenu dropdowns later
@@ -14,6 +14,7 @@ from data.schemas import ClassCollection, ClassDetails
 class Classes(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client
+        
         
     class_sub = SlashCommandGroup("class", "List of class subcommands", guild_ids = [536835061895397386, 871300534999584778])
 
@@ -41,7 +42,7 @@ class Classes(commands.Cog):
         duration: Option(int, "Enter the duration of the class in minutes (eg. 60, 120, 1440)", required = True),
         date: Option(str, "Enter the date of the class in DD-MM-YYYY format (eg. 12-12-2022, 25-4-2022)", required = True),
         start_time: Option(str, "Enter the time for when the class begins (eg. 9:00 AM, 12:30 PM, 4:00PM)", required = True),
-        channel: Option(discord.TextChannel, "Tag the channel you want the bot to post reminders in (eg. #fci, #fist, #general)", required = True)
+        channel: Option(TextChannel, "Tag the channel you want the bot to post reminders in (eg. #fci, #fist, #general)", required = True)
     ):
         try:
             date_and_time = dt.datetime.strptime(f"{date} {start_time}", "%d-%m-%Y %I:%M %p")
@@ -49,9 +50,10 @@ class Classes(commands.Cog):
             date_and_time = dt.datetime.strptime(f"{date} {start_time}", "%d-%m-%Y %I:%M%p")
         
         date_and_time = date_and_time - dt.timedelta(minutes = 5)
-
+        
         add = ClassCollection(
                 channel_id = channel.id,
+                guild_id = ctx.guild_id,
                 repeatable = bool(repeatable),
                 date_time = date_and_time,
 
@@ -87,9 +89,10 @@ class Classes(commands.Cog):
         # Query result of class_id integer
         classes: ClassCollection = ClassCollection.objects.filter(class_id = class_id).first()
 
-        if not classes:
-            await ctx.respond("No such class ID exists!")
+        if not classes or ctx.guild_id != classes.guild_id:
+            await ctx.respond(f"No such class ID exists for **{ctx.guild_id}**!")
             return
+
 
         query = json.loads(classes.to_json())
         
@@ -143,8 +146,8 @@ class Classes(commands.Cog):
         class_id: Option(int, "The ID of the class you want to delete", required = True)
     ):
         classes: ClassCollection = ClassCollection.objects.filter(class_id = class_id).first()
-        if not classes:
-            await ctx.respond("No such class ID exists!")
+        if not classes or ctx.guild_id != classes.guild_id:
+            await ctx.respond(f"No such class ID exists for **{ctx.guild}**!")
             return
         
         temp_date: dt.datetime = classes.date_time + dt.timedelta(minutes = 5)
@@ -186,8 +189,8 @@ class Classes(commands.Cog):
         class_id: Option(int, "The class ID of the class you want to edit details of", required = True)
     ): 
         classes: ClassCollection = ClassCollection.objects.filter(class_id = class_id).first()
-        if not classes:
-            await ctx.respond("No such class ID exists!")
+        if not classes or ctx.guild_id != classes.guild_id:
+            await ctx.respond(f"No such class ID exists for **{ctx.guild}**!")
             return
 
         temp_date: dt.datetime = classes.date_time + dt.timedelta(minutes = 5)
@@ -212,7 +215,7 @@ class Classes(commands.Cog):
         class_groups = ""
 
         count = 0
-        for classes in ClassCollection.objects:
+        for classes in ClassCollection.objects.filter(guild_id = ctx.guild_id):
             class_ids += f"{classes.class_id}\n" if count % 2 == 0 else f"**{classes.class_id}**\n"
             class_names += f"{classes.class_details.class_name}\n" if count % 2 == 0 else f"**{classes.class_details.class_name}**\n"
             class_groups += f"{classes.class_details.class_group}\n" if count % 2 == 0 else f"**{classes.class_details.class_group}**\n"
@@ -230,7 +233,10 @@ class Classes(commands.Cog):
 
         embed.set_footer(text = "Use the /class command to check out other options to add/update/remove/check classes")
 
-        await ctx.respond(embed = embed)
+        try:
+            await ctx.respond(embed = embed)
+        except HTTPException:
+            await ctx.respond(f"No active classes found for **{ctx.guild}**!")
 
     
     @class_sub.command(name = "subscribe", description = "Choose which class you want to be pinged for")
@@ -239,8 +245,8 @@ class Classes(commands.Cog):
     ):
         classes: ClassCollection = ClassCollection.objects.filter(class_id = class_id).first()
         
-        if not classes:
-            await ctx.respond("No such class ID exists!")
+        if not classes or ctx.guild_id != classes.guild_id:
+            await ctx.respond(f"No such class ID exists for **{ctx.guild}**!")
             return
         
         classes.update(add_to_set__notify = ctx.author.id, upsert = True)
@@ -258,7 +264,7 @@ class Classes(commands.Cog):
         for class_id in class_ids_list:
             classes: ClassCollection = ClassCollection.objects.filter(class_id = class_id).first()
 
-            if not classes:
+            if not classes or ctx.guild_id != classes.guild_id:
                 unsuccessful_subscriptions.append(f"**{class_id}**, ")
             else:
                 classes.update(add_to_set__notify = ctx.author.id, upsert = True)
@@ -301,12 +307,14 @@ class Classes(commands.Cog):
     ):
         classes: ClassCollection = ClassCollection.objects.filter(class_id = class_id).first()
         
-        if not classes:
-            await ctx.respond("No such class ID exists!")
+        if not classes or ctx.guild_id != classes.guild_id:
+            await ctx.respond(f"No such class ID exists for **{ctx.guild}**!")
             return
         
         classes.update(pull__notify = ctx.author.id, upsert = True)
         await ctx.respond(f"<@{ctx.author.id}> You have been unsubscribed from receiving notifications for **{classes.class_details.class_name} [{classes.class_details.class_group}]**")
+
+
 
     
 def setup(client: commands.Bot):

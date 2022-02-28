@@ -18,6 +18,7 @@ class ClassDetails(EmbeddedDocument):
 class ClassCollection(Document):
     class_id = SequenceField()
     channel_id = LongField()
+    guild_id = LongField()
 
     date_time = DateTimeField()
     repeatable = BooleanField()
