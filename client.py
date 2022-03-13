@@ -7,11 +7,14 @@ from mongoengine import connect
 from dotenv import load_dotenv
 
 
-# Token client stuff
+# .env
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
+MONGO_USERNAME = os.getenv('mongo-username')
+MONGO_PASSWORD = os.getenv('mongo-password')
+MONGO_DB_NAME = os.getenv('mongo-db-name')
 
-connect("db-classes")
+connect(db = MONGO_DB_NAME, username = MONGO_USERNAME, password = MONGO_PASSWORD, host = f"mongodb+srv://{MONGO_USERNAME}:{MONGO_PASSWORD}@cluster0.wsfli.mongodb.net/{MONGO_DB_NAME}?retryWrites=true&w=majority")
 client = commands.Bot(command_prefix = '!')
 
 # Called when the bot is ready to be used

@@ -1,20 +1,19 @@
 import random, os
 
-from discord import File, Embed
+from discord import File, Embed, SlashCommandGroup, InputTextStyle, Interaction
 from discord.ext import commands
-from discord.commands import slash_command, ApplicationContext, Option, OptionChoice
-
-
+from discord.commands import ApplicationContext, Option, OptionChoice
+from discord.ui import Modal, InputText
 
 class Animal(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client 
 
+    animal_sub = SlashCommandGroup("animal", "List of animal subcommands", guild_ids = [536835061895397386, 871300534999584778, 497567524800561153])
 
-    @slash_command(
-        name = "post_animal",
+    @animal_sub.command(
+        name = "post",
         description = "Posts a random animal image of your choice",
-        guild_ids = [871300534999584778, 536835061895397386],
     ) 
     async def post_animal(self, ctx: ApplicationContext, 
         animal: Option(str, "The animal you want to pick", 
@@ -35,7 +34,6 @@ class Animal(commands.Cog):
         )
     ):
         # Getting path to file
-        OptionChoice
         img_list = os.listdir(f"./images/{animal}")
         img_string = random.choice(img_list)
         path = f"./images/{animal}/{img_string}"
@@ -49,7 +47,28 @@ class Animal(commands.Cog):
         embed.set_image(url = "attachment://image.jpg")
         await ctx.respond(file = image_file, embed = embed)
         
-    
+    @animal_sub.command(
+        name = "submit",
+        description = "Submit an animal image to the bot (requires image URL)"
+    )
+    async def submit_animal_img(self, ctx: ApplicationContext):
+        # subclass modal soon
+        
+        modal = Modal(title = "You're not supposed to see this yet")
+        modal.add_item(InputText(style = InputTextStyle.singleline, label = "If you see this pop-up", placeholder = "then it's not finished yet", value = None, required = False))
+        modal.add_item(InputText(style = InputTextStyle.singleline, label = "Feel free to mess around though", placeholder = "since there's nothing here yet", value = None, required = False))
+
+        
+        async def modal_callback(interaction: Interaction):
+            print(modal.children[0].value) 
+            print(modal.children[1].value)
+            await interaction.response.send_message(f"heehee")
+
+        
+        
+        modal.callback = modal_callback
+        # keep this
+        await ctx.interaction.response.send_modal(modal)
 
 def setup(client: commands.Bot):
     client.add_cog(Animal(client))

@@ -6,17 +6,17 @@ from discord.ext import commands, pages
 from discord.commands import ApplicationContext, SlashCommandGroup, Option, OptionChoice
 
 # import actionrow buttons and selectmenu dropdowns later
-from discord.ui import Button, View
+from discord.ui import Button, View, Modal
 from discord.interactions import Interaction
 
-from data.schemas import ClassCollection, ClassDetails
+from utils.schemas import ClassCollection, ClassDetails
+from utils.custom_discord_classes import ClassConfirmDeletionView
 
 class Classes(commands.Cog):
     def __init__(self, client: commands.Bot):
         self.client = client
         
-        
-    class_sub = SlashCommandGroup("class", "List of class subcommands", guild_ids = [536835061895397386, 871300534999584778])
+    class_sub = SlashCommandGroup("class", "List of class subcommands", guild_ids = [536835061895397386, 871300534999584778, 497567524800561153])
 
     @class_sub.command(
         name = "add",
@@ -45,31 +45,35 @@ class Classes(commands.Cog):
         channel: Option(TextChannel, "Tag the channel you want the bot to post reminders in (eg. #fci, #fist, #general)", required = True)
     ):
         try:
-            date_and_time = dt.datetime.strptime(f"{date} {start_time}", "%d-%m-%Y %I:%M %p")
-        except ValueError:
-            date_and_time = dt.datetime.strptime(f"{date} {start_time}", "%d-%m-%Y %I:%M%p")
-        
-        date_and_time = date_and_time - dt.timedelta(minutes = 5)
-        
-        add = ClassCollection(
-                channel_id = channel.id,
-                guild_id = ctx.guild_id,
-                repeatable = bool(repeatable),
-                date_time = date_and_time,
-
-                class_details = ClassDetails(
-                    class_name = class_name, 
-                    class_group = group,
-                    duration = duration, 
-                    
-                    link = link,
-                    lecturer_name = lecturer_name      
-                )
-            )
+            try:
+                date_and_time = dt.datetime.strptime(f"{date} {start_time}", "%d-%m-%Y %I:%M %p")
+            except ValueError:
+                date_and_time = dt.datetime.strptime(f"{date} {start_time}", "%d-%m-%Y %I:%M%p")
             
-        add.save()
+            date_and_time = date_and_time - dt.timedelta(minutes = 5)
+            
+            add = ClassCollection(
+                    channel_id = channel.id,
+                    guild_id = ctx.guild_id,
+                    repeatable = bool(repeatable),
+                    date_time = date_and_time,
 
-        await ctx.respond(f"Class successfully added for **{add.class_details.class_name} [{add.class_details.class_group}]**!\n**Class ID: __{add.class_id}__**")
+                    class_details = ClassDetails(
+                        class_name = class_name, 
+                        class_group = group,
+                        duration = duration, 
+                        
+                        link = link,
+                        lecturer_name = lecturer_name      
+                    )
+                )
+                
+            add.save()
+
+            await ctx.respond(f"Class successfully added for **{add.class_details.class_name} [{add.class_details.class_group}]**!\n**Class ID: __{add.class_id}__**")
+
+        except Exception as error:
+            await ctx.respond(error)
 
 
     @class_sub.command(
@@ -124,7 +128,7 @@ class Classes(commands.Cog):
             'link': link,
             'lecturer_name': lecturer_name
         }
-
+        
         new_class_details = query['class_details']
 
         for key in args: 
@@ -137,7 +141,6 @@ class Classes(commands.Cog):
         await ctx.respond("Class successfully edited!")
    
 
-    # import buttons
     @class_sub.command(
         name = "remove",
         description = "Remove classes using their class ID"
@@ -160,29 +163,11 @@ class Classes(commands.Cog):
         embed.add_field(name = "Time", value = temp_date.strftime("%A %I:%M %p"), inline = True)
         embed.add_field(name = "Channel", value = f"<#{classes.channel_id}>", inline = True)
 
-        # Manager for components (buttons dropdowns etc) and timeouts
-        async def button_callback(interaction: Interaction):
-            button_choice = interaction.data['custom_id']
-            if button_choice == "yes":
-                await interaction.response.send_message(f"<@{ctx.author.id}> **{classes.class_details.class_name} [{classes.class_details.class_group}]** has been successfully deleted!")
-                classes.delete()
-            else:
-                await interaction.response.send_message(f"<@{ctx.author.id}> Class removal cancelled")
-            
-            await confirmation.delete_original_message()
-        
-        button1 = Button(style = ButtonStyle.green, label = "Yes, I want to delete this class", custom_id = "yes", emoji = "✔")
-        button2 = Button(style = ButtonStyle.danger, label = "No! I don't want that! ", custom_id = "no", emoji = "✖")
 
-        view = View()
-        view.add_item(button1)
-        view.add_item(button2)
-        
-        button1.callback = button_callback
-        button2.callback = button_callback
-        
+        view = ClassConfirmDeletionView(timeout = 8, ctx = ctx, class_tbd = classes)
         confirmation = await ctx.respond("Are you sure you want to delete this class?", view = view, embed = embed)
-
+        view.confirmation_message = confirmation
+        
 
     @class_sub.command(name = "check", description = "Check class details using the ID that is assigned to them")
     async def class_check(self, ctx: ApplicationContext, 
@@ -225,7 +210,6 @@ class Classes(commands.Cog):
         
         embed = Embed(description = f"Use `/class check` to check details of each class", color = 0x3aded6)
         embed.set_author(name = f"List of All Active Classes", icon_url = "https://cdn.discordapp.com/emojis/872501924925165598.webp?size=128&quality=lossless")
-
 
         embed.add_field(name = "Class ID", value = class_ids, inline = True)
         embed.add_field(name = "Class", value = class_names, inline = True)
@@ -281,8 +265,13 @@ class Classes(commands.Cog):
         class_names = ""
         class_groups = ""
 
+        subscribe_list = ClassCollection.objects.filter(notify__in = [ctx.author.id])
+        if not subscribe_list:
+            await ctx.respond(f"You are currently not subscribed to any classes <@{ctx.author.id}>")
+            return
+
         count = 0
-        for classes in ClassCollection.objects.filter(notify__in = [ctx.author.id]):
+        for classes in subscribe_list:
             class_ids += f"{classes.class_id}\n" if count % 2 == 0 else f"**{classes.class_id}**\n"
             class_names += f"{classes.class_details.class_name}\n" if count % 2 == 0 else f"**{classes.class_details.class_name}**\n"
             class_groups += f"{classes.class_details.class_group}\n" if count % 2 == 0 else f"**{classes.class_details.class_group}**\n"
@@ -300,6 +289,7 @@ class Classes(commands.Cog):
         embed.set_footer(text = "Use the /class command to check out other options to add/update/remove/check classes")
 
         await ctx.respond(f"<@{ctx.author.id}>", embed = embed)
+
 
     @class_sub.command(name = "unsubscribe", description = "Choose which class you don't want to be pinged for anymore")
     async def class_unsub(self, ctx: ApplicationContext, 

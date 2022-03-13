@@ -2,18 +2,33 @@ import datetime as dt
 
 import discord, pandas as pd, numpy as np, matplotlib.pyplot as plt
 from discord.ext import commands
-from discord.commands import slash_command, ApplicationContext
+from discord.commands import ApplicationContext, SlashCommandGroup
 
-class Vaccine(commands.Cog):
+class CovidGraphs(commands.Cog):
     def __init__(self, client):
         self.client = client
-        
-        # Only initialised once 
         self.yesterday = dt.date.today() - dt.timedelta(days = 1)
-        self.dataGetter() 
-        self.vaccineGraphPlot()
 
-    def dataGetter(self):
+        self.font_properties = {
+            'family': 'Arial',
+            'color':  'black',
+            'weight': 'heavy',
+            'size': 7,
+            'style': 'oblique'
+        }
+
+        self._vaxdataGetter() 
+        self._vaccineGraphPlot()
+        self._casesDataGetter()
+        self._casesGraphPlot()
+        
+
+    covid_sub = SlashCommandGroup("covid", "List of covid-related subcommands", guild_ids = [871300534999584778, 536835061895397386, 497567524800561153])
+
+    """
+    FOR VACCINE DOSES
+    """
+    def _vaxdataGetter(self):
         # Overwrites the date with yesterday
         self.yesterday = dt.date.today() - dt.timedelta(days = 1)
 
@@ -32,7 +47,7 @@ class Vaccine(commands.Cog):
         self._nation_daily_booster = vaccination_nationwide[6]
         self._total_cumul_doses = vaccination_nationwide[9]
 
-    def vaccineGraphPlot(self):
+    def _vaccineGraphPlot(self):
         # Set figure size and styling
         plt.figure(figsize = (6, 3), dpi = 300)
         plt.style.use("fivethirtyeight")
@@ -48,17 +63,11 @@ class Vaccine(commands.Cog):
         plt.xticks(position + BAR_WIDTH / 2, rotation = 90, labels = self._states)
 
         # Labels X and Y labels, and title of the graph as well as the properties like font size etc
-        font_properties = {
-            'family': 'Arial',
-            'color':  'black',
-            'weight': 'heavy',
-            'size': 7,
-            'style': 'oblique'
-        }
+        
 
-        plt.xlabel("States", fontdict = font_properties)
-        plt.ylabel("Vaccinations", fontdict = font_properties)
-        plt.title("Daily Vaccination by State", fontdict = font_properties)
+        plt.xlabel("States", fontdict = self.font_properties)
+        plt.ylabel("Vaccinations", fontdict = self.font_properties)
+        plt.title("Daily Vaccination by State", fontdict = self.font_properties)
         plt.rc('legend', fontsize = 4.5)
         plt.legend(loc = 'best')
         
@@ -70,16 +79,15 @@ class Vaccine(commands.Cog):
         plt.savefig("images/_graphs/vaccination-by-state.png")
     
     
-    @slash_command(
+    @covid_sub.command(
         name = "vaccine", 
-        description = "Sends the latest vaccination data from PICK",
-        guild_ids = [871300534999584778, 536835061895397386]
+        description = "Sends the latest vaccination data from PICK"
         )
     async def vaccine(self, ctx: ApplicationContext):
         # Reset each time (in case its a new day in which new data got added to the csv file), if not it will just use the current data 
         if self.yesterday != dt.date.today() - dt.timedelta(days = 1):
-            self.dataGetter()
-            self.vaccineGraphPlot()
+            self._vaxdataGetter()
+            self._vaccineGraphPlot()
         
         daily_first_dose = ""
         daily_second_dose = ""
@@ -117,8 +125,57 @@ class Vaccine(commands.Cog):
 
         graph_img_file = discord.File("images/_graphs/vaccination-by-state.png", filename = "image.png")
         vaxEmbed.set_image(url = "attachment://image.png")
-        await ctx.send(file = graph_img_file, embed = vaxEmbed, hidden = False)
+        await ctx.respond(file = graph_img_file, embed = vaxEmbed)
 
-        
+    """
+    FOR COVID CASES
+    """
+    def _casesDataGetter(self):
+        # Overwrites the date with yesterday
+        self.yesterday = dt.date.today() - dt.timedelta(days = 1)
+
+        # Convert CSV data into lists
+        cases_csv = pd.read_csv(r'https://raw.githubusercontent.com/MoH-Malaysia/covid19-public/main/epidemic/cases_malaysia.csv').tail(14)
+        self.dates = cases_csv['date'].tolist()
+        self.new_cases = cases_csv['cases_new'].tolist()
+    
+    def _casesGraphPlot(self):
+        plt.figure(figsize = (13, 8), dpi = 100)
+        plt.style.use("fivethirtyeight")
+
+        # Plotting the line graph
+        position = np.arange(len(self.dates))
+        plt.plot(position, self.new_cases, label = "Cases")
+
+        # Rotates x-axis text by 90 degrees, and aligns the dates with the X-Axis
+        plt.xticks(position , rotation = 90, labels = self.dates)
+
+        plt.xlabel("Dates", fontdict = self.font_properties)
+        plt.ylabel("Cases", fontdict = self.font_properties)
+        plt.title("Daily Covid-19 Cases For Past 2 Weeks", fontdict = self.font_properties)
+        plt.rc('legend', fontsize = 4.5)
+        plt.legend(loc = 'best')
+
+        plt.tick_params(labelsize = 5)
+        plt.tight_layout()
+
+        # Save image in directory
+        plt.savefig("images/_graphs/cases-past-fortnight.png")
+
+    @covid_sub.command(
+        name = "cases",
+        description = "Displays amount of cases for the past 14 days"
+    )
+    async def covidcases(self, ctx: ApplicationContext):
+        if self.yesterday != dt.date.today() - dt.timedelta(days = 1):
+            self._casesDataGetter()
+            self._casesGraphPlot()
+        casesEmbed = discord.Embed(title = "Malaysia Daily Covid Cases (Past 14 Days)", 
+                                   color = 0x33cc18)
+        cases_img = discord.File("images/_graphs/cases-past-fortnight.png", filename = "image.png")
+        casesEmbed.set_image(url = "attachment://image.png")
+        await ctx.respond(file = cases_img, embed = casesEmbed)
+
+
 def setup(client: commands.Bot):
-    client.add_cog(Vaccine(client))
+    client.add_cog(CovidGraphs(client))

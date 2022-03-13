@@ -3,7 +3,7 @@ import datetime as dt
 from discord import Embed
 from discord.ext import commands, tasks 
 
-from data.schemas import ClassCollection
+from utils.schemas import ClassCollection
 
 class Scheduler(commands.Cog):
     def __init__(self, client: commands.Bot):
