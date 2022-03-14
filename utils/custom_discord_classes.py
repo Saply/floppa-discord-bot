@@ -1,12 +1,11 @@
 import datetime as dt
-from discord.ext.pages import *
 
-from typing import Awaitable, List, Union
 from discord.errors import NotFound
-from discord import Button, ButtonStyle, File, Embed, SlashCommandGroup, InputTextStyle, Interaction
+from discord import Button, ButtonStyle, Interaction
 from discord.ext import commands
 from discord.commands import slash_command, ApplicationContext, Option, OptionChoice
 from discord.ui import Modal, InputText, View, button
+from discord.ext.pages import PaginatorButton, PageGroup, PaginatorMenu, Paginator
 
 from utils.schemas import ClassCollection, ClassDetails
 
@@ -42,7 +41,54 @@ class ClassConfirmDeletionView(View):
         # The "timeout" timer still persists even after the user has already clicked a button. Currently, I don't know if Pycord has a way to
         # cancel that timeout, so the only option was to catch the error that is raised whenever I try to delete a message that was already deleted
         except NotFound:
-            return
+            return 
+
+
+# Sorting classes in list
+class ClassSort:
+    def __init__(self, class_list: list, sort_by: str):
+        self.class_list = class_list
+
+        if sort_by == "time":
+            self._timeSort()
+        elif sort_by == "alphabet":
+            self._alphabetSort()
+        elif sort_by == "class_id":
+            self._idSort()
+        
+        # Failsafe in case someone tries to type something other than the multiple-choice option
+        else:
+            self.listGetter(True)
+
+
+    def _alphabetSort(self):
+        self.class_list = sorted(self.class_list, key = lambda letter: letter[1])
+
+
+    def _timeSort(self):
+        EPOCH_FIRST_CLASS = 345300
+        EPOCH_WEEK = 604800
+
+        # Do % by a week in epoch time to account for classes that won't be in the same week (eg. 14-3-2022 and 21-3-2022)
+        for item in self.class_list:
+            item[3] = item[3] % EPOCH_WEEK 
+        # Using first class in a week (Monday 8:00AM) as comparison, add additional values to epoch times which are smaller than it to avoid broken sorting
+            if item[3] < EPOCH_FIRST_CLASS:
+                item[3] = item[3] + EPOCH_WEEK
+
+        self.class_list = sorted(self.class_list, key = lambda x: x[3])
+
+
+    def _idSort(self):
+        self.class_list = sorted(self.class_list, key = lambda id: id[4])
+
+
+    def listGetter(self, order: bool):
+        if order == True:
+            return self.class_list
+        else:
+            return self.class_list[::-1]
+
 
 
 class AnimalSubmissionModal(Modal):
@@ -50,13 +96,6 @@ class AnimalSubmissionModal(Modal):
 
 # Creating multiple page embeds
 class CustomPaginator(Paginator):
-    def __init__(self, all_pages: List[Embed]):
-        super().__init__()
-
-    # one page = 15 classes perhaps 
-    # for loop to generate multiple embeds 
-    # also use ClassCollection.count() 
-
-
-
-    
+    pass
+    # one page = 10-15 classes perhaps 
+    # split into multiple pages depending on array length

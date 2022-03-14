@@ -10,7 +10,7 @@ from discord.ui import Button, View, Modal
 from discord.interactions import Interaction
 
 from utils.schemas import ClassCollection, ClassDetails
-from utils.custom_discord_classes import ClassConfirmDeletionView
+from utils.custom_discord_classes import ClassConfirmDeletionView, ClassSort
 
 class Classes(commands.Cog):
     def __init__(self, client: commands.Bot):
@@ -94,7 +94,7 @@ class Classes(commands.Cog):
         classes: ClassCollection = ClassCollection.objects.filter(class_id = class_id).first()
 
         if not classes or ctx.guild_id != classes.guild_id:
-            await ctx.respond(f"No such class ID exists for **{ctx.guild_id}**!")
+            await ctx.respond(f"No such class ID exists for **{ctx.guild}**!")
             return
 
 
@@ -194,33 +194,66 @@ class Classes(commands.Cog):
 
     
     @class_sub.command(name = "list", description = "Check the list of all currently active classes")
-    async def class_list(self, ctx: ApplicationContext):
-        class_ids = ""
-        class_names = ""
-        class_groups = ""
+    async def class_list(self, ctx: ApplicationContext,
+        sort_by: Option(str, "What do you want to sort the list by?", required = False, default = "class_id",
+            choices = [
+                OptionChoice(
+                    name = "Class ID",
+                    value = "class_id"
+                ),
+                OptionChoice(
+                    name = "Alphabet",
+                    value = "alphabet"
+                ),
+                OptionChoice(
+                    name = "Time",
+                    value = "time"
+                )
+            ]
+        ),
+        order: Option(int, "Do you want to display the list in reversed order?", required = False, default = 1,
+            choices = [
+                OptionChoice(
+                    name = "Yes",
+                    value = 0
+                ),
+                OptionChoice(
+                    name = "No",
+                    value = 1
+                )
+            ]
+        )
+    ):
+        class_list = []
 
-        count = 0
         for classes in ClassCollection.objects.filter(guild_id = ctx.guild_id):
-            class_ids += f"{classes.class_id}\n" if count % 2 == 0 else f"**{classes.class_id}**\n"
-            class_names += f"{classes.class_details.class_name}\n" if count % 2 == 0 else f"**{classes.class_details.class_name}**\n"
-            class_groups += f"{classes.class_details.class_group}\n" if count % 2 == 0 else f"**{classes.class_details.class_group}**\n"
+            # Index 3 and 4 in class_list is reserved for sorting
+            class_list.append( 
+                [
+                    f"**{classes.class_id}**",
+                    f"{classes.class_details.class_name} **[{classes.class_details.class_group}]**",
+                    (classes.date_time + dt.timedelta(minutes = 5)).strftime("%A %I:%M %p"),
+                    dt.datetime.timestamp(classes.date_time),
+                    classes.class_id
+                ]
+            )
+        
+        class_list = ClassSort(class_list, sort_by).listGetter(bool(order))
 
-            count += 1
-        
-        
         embed = Embed(description = f"Use `/class check` to check details of each class", color = 0x3aded6)
         embed.set_author(name = f"List of All Active Classes", icon_url = "https://cdn.discordapp.com/emojis/872501924925165598.webp?size=128&quality=lossless")
 
-        embed.add_field(name = "Class ID", value = class_ids, inline = True)
-        embed.add_field(name = "Class", value = class_names, inline = True)
-        embed.add_field(name = "Group", value = class_groups, inline = True)
+        embed.add_field(name = "Class ID", value = "\n".join(i[0] for i in class_list), inline = True)
+        embed.add_field(name = "Subject Name (Group)", value = "\n".join(j[1] for j in class_list), inline = True)
+        embed.add_field(name = "Time", value = "\n".join(k[2] for k in class_list), inline = True)
+
 
         embed.set_footer(text = "Use the /class command to check out other options to add/update/remove/check classes")
 
         try:
             await ctx.respond(embed = embed)
         except HTTPException:
-            await ctx.respond(f"No active classes found for **{ctx.guild}**!")
+            await ctx.respond(f"No active classes found for **{ctx.guild}**!") 
 
     
     @class_sub.command(name = "subscribe", description = "Choose which class you want to be pinged for")
