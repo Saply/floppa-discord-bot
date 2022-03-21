@@ -26,7 +26,7 @@ class Scheduler(commands.Cog):
             temp_date = classes.date_time + dt.timedelta(minutes = 5)
             embed = Embed(title = "** ** **>>> __CLASS LINK__ <<<**", url = classes.class_details.link, description = f"```yaml\n{classes.class_details.link}```")
             embed.set_author(name = f"Class is starting!", icon_url = "https://cdn.discordapp.com/emojis/872501924925165598.webp?size=128&quality=lossless")
-            embed.set_thumbnail(url = "https://cdn.discordapp.com/attachments/871307003111276544/936935102301220934/image_2022-01-29_184417.png")
+            embed.set_thumbnail(url = self.client.get_guild(classes.guild_id).icon)
             embed.add_field(name = "Class ID", value = f"**{classes.class_id}**", inline = False)
             embed.add_field(name = "Duration", value = f"{classes.class_details.duration} minutes", inline = True)
             embed.add_field(name = "Class Name", value = classes.class_details.class_name, inline = True)
@@ -40,6 +40,7 @@ class Scheduler(commands.Cog):
             # Gets channel to post class in from database
             discord_channel = self.client.get_channel(classes.channel_id)
             await discord_channel.send(content = notifications, embed = embed)
+
             
             # Checks if the class is repeated or not
             # If it is repeated, update the date with the same time but for next week

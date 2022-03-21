@@ -1,7 +1,9 @@
 import datetime as dt
 
+import pandas as pd
+
 from discord.errors import NotFound
-from discord import Button, ButtonStyle, Interaction
+from discord import Button, ButtonStyle, Embed, Interaction
 from discord.ext import commands
 from discord.commands import slash_command, ApplicationContext, Option, OptionChoice
 from discord.ui import Modal, InputText, View, button
@@ -46,24 +48,19 @@ class ClassConfirmDeletionView(View):
 
 # Sorting classes in list
 class ClassSort:
-    def __init__(self, class_list: list, sort_by: str):
+    def __init__(self, class_list: list[list], sort_by: str):
         self.class_list = class_list
 
+        # lol
         if sort_by == "time":
             self._timeSort()
         elif sort_by == "alphabet":
             self._alphabetSort()
         elif sort_by == "class_id":
             self._idSort()
-        
-        # Failsafe in case someone tries to type something other than the multiple-choice option
-        else:
-            self.listGetter(True)
-
 
     def _alphabetSort(self):
         self.class_list = sorted(self.class_list, key = lambda letter: letter[1])
-
 
     def _timeSort(self):
         EPOCH_FIRST_CLASS = 345300
@@ -78,10 +75,8 @@ class ClassSort:
 
         self.class_list = sorted(self.class_list, key = lambda x: x[3])
 
-
     def _idSort(self):
         self.class_list = sorted(self.class_list, key = lambda id: id[4])
-
 
     def listGetter(self, order: bool):
         if order == True:
@@ -90,12 +85,31 @@ class ClassSort:
             return self.class_list[::-1]
 
 
+class MiscellaneousCommands:
+    @staticmethod
+    def next_date(weekday: int, time: str) -> dt.datetime:
+        today = dt.datetime.now()
+        time = time.replace(" ", "")
 
-class AnimalSubmissionModal(Modal):
-    pass 
+        result = today + dt.timedelta(days = (weekday - today.weekday()) % 7)
+
+        # Insert time into result 
+        result = dt.datetime.strptime(f"{dt.datetime.strftime(result, '%d-%m-%Y')} {time}", "%d-%m-%Y %I:%M%p") - dt.timedelta(minutes = 5)
+        
+        # Compares if result is less than current time, if it is, add one week to it
+        if today < result:
+            return result 
+        else: 
+            return result + dt.timedelta(days = 7)
+
 
 # Creating multiple page embeds
 class CustomPaginator(Paginator):
-    pass
+    pass 
     # one page = 10-15 classes perhaps 
     # split into multiple pages depending on array length
+
+
+    
+
+    

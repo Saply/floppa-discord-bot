@@ -10,7 +10,7 @@ from discord.ui import Button, View, Modal
 from discord.interactions import Interaction
 
 from utils.schemas import ClassCollection, ClassDetails
-from utils.custom_discord_classes import ClassConfirmDeletionView, ClassSort
+from utils.custom_discord_classes import ClassConfirmDeletionView, ClassSort, MiscellaneousCommands
 
 class Classes(commands.Cog):
     def __init__(self, client: commands.Bot):
@@ -40,23 +40,47 @@ class Classes(commands.Cog):
         lecturer_name: Option(str, "What is the name of the lecturer?", required = True),
         group: Option(str, "Enter the lecture/tutorial group (eg. TT1V, TT8L, TC2V)", required = True),
         duration: Option(int, "Enter the duration of the class in minutes (eg. 60, 120, 1440)", required = True),
-        date: Option(str, "Enter the date of the class in DD-MM-YYYY format (eg. 12-12-2022, 25-4-2022)", required = True),
+        day: Option(int, "What day is the class on?", required = True,
+            choices = [
+                OptionChoice(
+                    name = "Monday",
+                    value = 0
+                ),
+                OptionChoice(
+                    name = "Tuesday",
+                    value = 1
+                ),
+                OptionChoice(
+                    name = "Wednesday",
+                    value = 2
+                ),
+                OptionChoice(
+                    name = "Thursday",
+                    value = 3
+                ),
+                OptionChoice(
+                    name = "Friday",
+                    value = 4
+                ),
+                OptionChoice(
+                    name = "Saturday",
+                    value = 5
+                ),
+                OptionChoice(
+                    name = "Sunday",
+                    value = 6
+                )
+            ]
+        ),
         start_time: Option(str, "Enter the time for when the class begins (eg. 9:00 AM, 12:30 PM, 4:00PM)", required = True),
         channel: Option(TextChannel, "Tag the channel you want the bot to post reminders in (eg. #fci, #fist, #general)", required = True)
     ):
-        try:
-            try:
-                date_and_time = dt.datetime.strptime(f"{date} {start_time}", "%d-%m-%Y %I:%M %p")
-            except ValueError:
-                date_and_time = dt.datetime.strptime(f"{date} {start_time}", "%d-%m-%Y %I:%M%p")
-            
-            date_and_time = date_and_time - dt.timedelta(minutes = 5)
-            
+        try:          
             add = ClassCollection(
                     channel_id = channel.id,
                     guild_id = ctx.guild_id,
                     repeatable = bool(repeatable),
-                    date_time = date_and_time,
+                    date_time = MiscellaneousCommands.next_date(day, start_time),
 
                     class_details = ClassDetails(
                         class_name = class_name, 
@@ -73,7 +97,7 @@ class Classes(commands.Cog):
             await ctx.respond(f"Class successfully added for **{add.class_details.class_name} [{add.class_details.class_group}]**!\n**Class ID: __{add.class_id}__**")
 
         except Exception as error:
-            await ctx.respond(error)
+            await ctx.respond(f"**Error when adding class:** {error}")
 
 
     @class_sub.command(
@@ -155,7 +179,7 @@ class Classes(commands.Cog):
         
         temp_date: dt.datetime = classes.date_time + dt.timedelta(minutes = 5)
         embed = Embed(title = "Class Details", description = f"```yaml\n{classes.class_details.link}```", color = 0xdb161d)
-        embed.set_thumbnail(url = "https://cdn.discordapp.com/attachments/871307003111276544/936935102301220934/image_2022-01-29_184417.png")
+        embed.set_thumbnail(url = self.client.get_guild(classes.guild_id).icon)
         embed.add_field(name = "Duration", value = f"{classes.class_details.duration} minutes", inline = True)
         embed.add_field(name = "Class Name", value = classes.class_details.class_name, inline = True)
         embed.add_field(name = "Group", value = classes.class_details.class_group, inline = True)
@@ -181,7 +205,7 @@ class Classes(commands.Cog):
         temp_date: dt.datetime = classes.date_time + dt.timedelta(minutes = 5)
         embed = Embed(title = "** ** **>>> __CLASS LINK__ <<<**", url = classes.class_details.link, description = f"```yaml\n{classes.class_details.link}```", color = 0x9e30d1)
         embed.set_author(name = f"Class Details", icon_url = "https://cdn.discordapp.com/emojis/872501924925165598.webp?size=128&quality=lossless")
-        embed.set_thumbnail(url = "https://cdn.discordapp.com/attachments/871307003111276544/936935102301220934/image_2022-01-29_184417.png")
+        embed.set_thumbnail(url = self.client.get_guild(classes.guild_id).icon)
         embed.add_field(name = "Class ID", value = f"**{classes.class_id}**", inline = False)
         embed.add_field(name = "Duration", value = f"{classes.class_details.duration} minutes", inline = True)
         embed.add_field(name = "Class Name", value = classes.class_details.class_name, inline = True)
@@ -275,7 +299,7 @@ class Classes(commands.Cog):
         class_ids: Option(str, "List down multiple class IDs separated by space (eg. /class subscribemany class_ids: 1 3 5 7 10)", required = True)
     ):
         class_ids_list: list = [int(i) for i in class_ids.split()]
-
+        
         successful_subscriptions = []
         unsuccessful_subscriptions = []
         for class_id in class_ids_list:
@@ -293,31 +317,62 @@ class Classes(commands.Cog):
 
 
     @class_sub.command(name = "subscribelist", description = "Check the list of which classes you wish to be notified for")
-    async def class_subscribelist(self, ctx: ApplicationContext):
-        class_ids = ""
-        class_names = ""
-        class_groups = ""
+    async def class_subscribelist(self, ctx: ApplicationContext,
+        sort_by: Option(str, "What do you want to sort the list by?", required = False, default = "class_id",
+            choices = [
+                OptionChoice(
+                    name = "Class ID",
+                    value = "class_id"
+                ),
+                OptionChoice(
+                    name = "Alphabet",
+                    value = "alphabet"
+                ),
+                OptionChoice(
+                    name = "Time",
+                    value = "time"
+                )
+            ]
+        ),
+        order: Option(int, "Do you want to display the list in reversed order?", required = False, default = 1,
+            choices = [
+                OptionChoice(
+                    name = "Yes",
+                    value = 0
+                ),
+                OptionChoice(
+                    name = "No",
+                    value = 1
+                )
+            ]
+        )
+    ):  
+        class_list = []
 
-        subscribe_list = ClassCollection.objects.filter(notify__in = [ctx.author.id])
-        if not subscribe_list:
-            await ctx.respond(f"You are currently not subscribed to any classes <@{ctx.author.id}>")
-            return
-
-        count = 0
-        for classes in subscribe_list:
-            class_ids += f"{classes.class_id}\n" if count % 2 == 0 else f"**{classes.class_id}**\n"
-            class_names += f"{classes.class_details.class_name}\n" if count % 2 == 0 else f"**{classes.class_details.class_name}**\n"
-            class_groups += f"{classes.class_details.class_group}\n" if count % 2 == 0 else f"**{classes.class_details.class_group}**\n"
-
-            count += 1
+        for classes in ClassCollection.objects.filter(notify__in = [ctx.author.id]):
+            if not classes:
+                await ctx.respond(f"You are currently not subscribed to any classes <@{ctx.author.id}>")
+                return
+            
+            class_list.append( 
+                [
+                    f"**{classes.class_id}**",
+                    f"{classes.class_details.class_name} **[{classes.class_details.class_group}]**",
+                    (classes.date_time + dt.timedelta(minutes = 5)).strftime("%A %I:%M %p"),
+                    dt.datetime.timestamp(classes.date_time),
+                    classes.class_id
+                ]
+            )
+        
+        class_list = ClassSort(class_list, sort_by).listGetter(bool(order))
         
         embed = Embed(description = f"Use `/class check` to check details of each class", color = 0x3aded6)
         embed.set_author(name = f"List of Classes {str(ctx.author)[:-5]} is subscribed to", icon_url = ctx.author.avatar)
 
 
-        embed.add_field(name = "Class ID", value = class_ids, inline = True)
-        embed.add_field(name = "Class", value = class_names, inline = True)
-        embed.add_field(name = "Group", value = class_groups, inline = True)
+        embed.add_field(name = "Class ID", value = "\n".join(i[0] for i in class_list), inline = True)
+        embed.add_field(name = "Subject Name (Group)", value = "\n".join(j[1] for j in class_list), inline = True)
+        embed.add_field(name = "Time", value = "\n".join(k[2] for k in class_list), inline = True)
 
         embed.set_footer(text = "Use the /class command to check out other options to add/update/remove/check classes")
 

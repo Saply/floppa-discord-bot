@@ -8,7 +8,7 @@ class ClassDetails(EmbeddedDocument):
 
     link = URLField()
     lecturer_name = StringField()
-    ImageField
+
 
     meta = {
         'strict': False
