@@ -1,13 +1,14 @@
 import datetime as dt
 
 import discord, pandas as pd, numpy as np, matplotlib.pyplot as plt
-from discord.ext import commands
+from discord import Cog, Bot
 from discord.commands import ApplicationContext, SlashCommandGroup
 
-class CovidGraphs(commands.Cog):
+class CovidGraphs(Cog):
     def __init__(self, client):
         self.client = client
         self.yesterday = dt.date.today() - dt.timedelta(days = 1)
+        
 
         self.font_properties = {
             'family': 'Arial',
@@ -23,7 +24,7 @@ class CovidGraphs(commands.Cog):
         self._casesGraphPlot()
         
 
-    covid_sub = SlashCommandGroup("covid", "List of covid-related subcommands", guild_ids = [871300534999584778, 536835061895397386, 497567524800561153])
+    covid_sub = SlashCommandGroup("covid", "List of covid-related subcommands", guild_ids = [981068613769371718, 536835061895397386])
 
     """
     FOR VACCINE DOSES
@@ -76,7 +77,7 @@ class CovidGraphs(commands.Cog):
         plt.tight_layout()
 
         # Save image in directory
-        plt.savefig("images/_graphs/vaccination-by-state.png")
+        plt.savefig("graphs/vaccination-by-state.png")
     
     
     @covid_sub.command(
@@ -102,10 +103,6 @@ class CovidGraphs(commands.Cog):
             daily_booster += f"{self._daily_booster[i]}\n"
             daily_total += f"{self._daily_total[i]}\n"
 
-            ###
-            # future idea: split it up into 1st and 2nd doses by state as well as percentage of population vaccinated
-            # me from the future: dont do this anymore because its pointless as nobody gets their 1st and 2nd doses anymore
-            ###
             
         vaxEmbed = discord.Embed(title = "Malaysia Vaccination Rate 2 electric boogaloo", 
                                 description = f"As of __**{self.yesterday}**__\n**Booster Doses Given Out Today:** {self._nation_daily_booster}\n**Total Cumulative Doses Nationwide** {self._total_cumul_doses}", 
@@ -117,13 +114,11 @@ class CovidGraphs(commands.Cog):
         vaxEmbed.add_field(name = "__Total__", value = f"{daily_total}", inline = True)
 
         # Footer
-        # it turns out you cant put hyperlinks in footers :(
-        # vaxEmbed.set_footer(text = "[**Data taken from the GitHub page of the COVID-19 Immunisation Task Force (CITF) for Malaysia's National COVID-19 Immunisation Programme (PICK)**](https://github.com/CITF-Malaysia/citf-public)")
         vaxEmbed.set_footer(text = "Data sourced from the GitHub page of the COVID-19 Immunisation Task Force (CITF) for Malaysia's National COVID-19 Immunisation Programme (PICK)")
         vaxEmbed.set_thumbnail(url = "https://cdn.discordapp.com/attachments/869934977381437500/870597552532242462/header-vax-microsite2x.png?width=675&height=675")
         
 
-        graph_img_file = discord.File("images/_graphs/vaccination-by-state.png", filename = "image.png")
+        graph_img_file = discord.File("graphs/vaccination-by-state.png", filename = "image.png")
         vaxEmbed.set_image(url = "attachment://image.png")
         await ctx.respond(file = graph_img_file, embed = vaxEmbed)
 
@@ -160,7 +155,7 @@ class CovidGraphs(commands.Cog):
         plt.tight_layout()
 
         # Save image in directory
-        plt.savefig("images/_graphs/cases-past-fortnight.png")
+        plt.savefig("graphs/cases-past-fortnight.png")
 
     @covid_sub.command(
         name = "cases",
@@ -172,10 +167,10 @@ class CovidGraphs(commands.Cog):
             self._casesGraphPlot()
         casesEmbed = discord.Embed(title = "Malaysia Daily Covid Cases (Past 14 Days)", 
                                    color = 0x33cc18)
-        cases_img = discord.File("images/_graphs/cases-past-fortnight.png", filename = "image.png")
+        cases_img = discord.File("graphs/cases-past-fortnight.png", filename = "image.png")
         casesEmbed.set_image(url = "attachment://image.png")
         await ctx.respond(file = cases_img, embed = casesEmbed)
 
 
-def setup(client: commands.Bot):
+def setup(client: Bot):
     client.add_cog(CovidGraphs(client))

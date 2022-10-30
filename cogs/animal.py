@@ -1,15 +1,14 @@
-import random, os
+import requests
 
-from discord import File, Embed, SlashCommandGroup, InputTextStyle, Interaction
-from discord.ext import commands
+from discord import Embed, SlashCommandGroup, Bot, Cog
 from discord.commands import ApplicationContext, Option, OptionChoice
-from discord.ui import Modal, InputText
 
-class Animal(commands.Cog):
-    def __init__(self, client: commands.Bot):
+class Animal(Cog):
+    def __init__(self, client: Bot):
         self.client = client 
 
-    animal_sub = SlashCommandGroup("animal", "List of animal subcommands", guild_ids = [536835061895397386, 871300534999584778, 497567524800561153])
+    animal_sub = SlashCommandGroup("animal", "List of animal subcommands", guild_ids = [536835061895397386, 981068613769371718])
+
 
     @animal_sub.command(
         name = "post",
@@ -19,57 +18,40 @@ class Animal(commands.Cog):
         animal: Option(str, "The animal you want to pick", 
             choices = [
                 OptionChoice(
-                    name = "Caracal",
-                    value = "caracal"
-                ),
-                OptionChoice(
-                    name = "Capybara",
-                    value = "capybara"
+                    name = "Cat",
+                    value = "cat"
                 ),
                 OptionChoice(
                     name = "Shiba Inu",
-                    value = "shiba-inu"
+                    value = "shiba"
+                ),
+                OptionChoice(
+                    name = "Capybara",
+                    value = "capy"
                 )
             ]   
         )
     ):
-        # Getting path to file
-        img_list = os.listdir(f"./images/{animal}")
-        img_string = random.choice(img_list)
-        path = f"./images/{animal}/{img_string}"
-
-        # This is extremely important
-        compliments = ["cute", "funny", "hilarious", "extravagant", "cat"]
+        if animal == "capy":
+            img = requests.get("https://api.capybara-api.xyz/v1/image/random").json()['image_urls']['large']
+            fact = requests.get("https://api.capybara-api.xyz/v1/facts/random").json()['fact']
+            footer = "Fact and image provided by The Capybara API"
+        elif animal == "cat":
+            img = requests.get("https://shibe.online/api/cats?count=1").json()[0]
+            fact = requests.get("https://catfact.ninja/fact?max_length=140").json()['fact']
+            footer = "Fact provided by Cat Facts API and image provided by Shibe Online Cats API"
+        else:
+            img = requests.get("http://shibe.online/api/shibes?count=1").json()[0]
+            fact = requests.get("https://dog-api.kinduff.com/api/facts?number=1").json()['facts'][0]
+            footer = "Fact provided by kinduff's Dog API and image provided by Shibe Online Shiba Inu API"
 
         # Making the embed
-        embed = Embed(title = f"A random {animal}", description = random.choice(compliments), color = 0x3240a8)
-        image_file = File(path, filename = "image.jpg")
-        embed.set_image(url = "attachment://image.jpg")
-        await ctx.respond(file = image_file, embed = embed)
-        
-    @animal_sub.command(
-        name = "submit",
-        description = "Submit an animal image to the bot (requires image URL)"
-    )
-    async def submit_animal_img(self, ctx: ApplicationContext):
-        # subclass modal soon
-        
-        modal = Modal(title = "You're not supposed to see this yet")
-        modal.add_item(InputText(style = InputTextStyle.singleline, label = "If you see this pop-up", placeholder = "then it's not finished yet", value = None, required = False))
-        modal.add_item(InputText(style = InputTextStyle.singleline, label = "Feel free to mess around though", placeholder = "since there's nothing here yet", value = None, required = False))
+        embed = Embed(title = f"A random {animal}", description = fact, color = 0x3240a8)
+        embed.set_image(url = img)
+        embed.set_footer(text = footer)
+        await ctx.respond(embed = embed)
 
-        
-        async def modal_callback(interaction: Interaction):
-            print(modal.children[0].value) 
-            print(modal.children[1].value)
-            await interaction.response.send_message(f"heehee")
 
-        
-        
-        modal.callback = modal_callback
-        # keep this
-        await ctx.interaction.response.send_modal(modal)
-
-def setup(client: commands.Bot):
+def setup(client: Bot):
     client.add_cog(Animal(client))
     

@@ -1,15 +1,11 @@
 import datetime as dt
 
-import pandas as pd
-
 from discord.errors import NotFound
-from discord import Button, ButtonStyle, Embed, Interaction
-from discord.ext import commands
-from discord.commands import slash_command, ApplicationContext, Option, OptionChoice
-from discord.ui import Modal, InputText, View, button
-from discord.ext.pages import PaginatorButton, PageGroup, PaginatorMenu, Paginator
+from discord import Button, ButtonStyle, Interaction
+from discord.commands import ApplicationContext
+from discord.ui import View, button
 
-from utils.schemas import ClassCollection, ClassDetails
+from utils.schemas import ClassCollection
 
 
  
@@ -48,7 +44,7 @@ class ClassConfirmDeletionView(View):
 
 # Sorting classes in list
 class ClassSort:
-    def __init__(self, class_list: list[list], sort_by: str):
+    def __init__(self, class_list: list, sort_by: str):
         self.class_list = class_list
 
         # lol
@@ -101,13 +97,6 @@ class MiscellaneousCommands:
             return result 
         else: 
             return result + dt.timedelta(days = 7)
-
-
-# Creating multiple page embeds
-class CustomPaginator(Paginator):
-    pass 
-    # one page = 10-15 classes perhaps 
-    # split into multiple pages depending on array length
 
 
     

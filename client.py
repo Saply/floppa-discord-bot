@@ -1,8 +1,6 @@
 import os
 
-from discord.ext import commands
-from discord import Status, Game
-
+from discord import Status, Game, Intents, Bot
 from mongoengine import connect
 from dotenv import load_dotenv
 
@@ -15,7 +13,9 @@ MONGO_PASSWORD = os.getenv('mongo-password')
 MONGO_DB_NAME = os.getenv('mongo-db-name')
 
 connect(db = MONGO_DB_NAME, username = MONGO_USERNAME, password = MONGO_PASSWORD, host = f"mongodb+srv://{MONGO_USERNAME}:{MONGO_PASSWORD}@cluster0.wsfli.mongodb.net/{MONGO_DB_NAME}?retryWrites=true&w=majority")
-client = commands.Bot(command_prefix = '!')
+
+client = Bot(command_prefix = '!', intents = Intents.all())
+
 
 # Called when the bot is ready to be used
 @client.event
@@ -33,5 +33,4 @@ if __name__ == '__main__':
     for filename in os.listdir("cogs"):
         if filename.endswith(".py"):
             client.load_extension(f"cogs.{filename[:-3]}")
-
-client.run(TOKEN)
+    client.run(TOKEN)

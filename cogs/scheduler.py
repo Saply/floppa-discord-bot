@@ -1,12 +1,12 @@
 import datetime as dt
 
-from discord import Embed
-from discord.ext import commands, tasks 
+from discord import Embed, Cog, Bot
+from discord.ext import tasks 
 
 from utils.schemas import ClassCollection
 
-class Scheduler(commands.Cog):
-    def __init__(self, client: commands.Bot):
+class Scheduler(Cog):
+    def __init__(self, client: Bot):
         self.client = client
         self.class_clock.start()
 
@@ -57,5 +57,5 @@ class Scheduler(commands.Cog):
         await self.client.wait_until_ready()
         
 
-def setup(client: commands.Bot):
+def setup(client: Bot):
     client.add_cog(Scheduler(client))

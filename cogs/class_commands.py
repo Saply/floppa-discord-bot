@@ -1,22 +1,18 @@
-import json, asyncio, datetime as dt
+import json, datetime as dt
 
-import discord
-from discord import ButtonStyle, File, Embed, HTTPException, TextChannel
-from discord.ext import commands, pages
+from discord import Embed, HTTPException, TextChannel, Bot, Cog
 from discord.commands import ApplicationContext, SlashCommandGroup, Option, OptionChoice
 
-# import actionrow buttons and selectmenu dropdowns later
-from discord.ui import Button, View, Modal
-from discord.interactions import Interaction
 
 from utils.schemas import ClassCollection, ClassDetails
 from utils.custom_discord_classes import ClassConfirmDeletionView, ClassSort, MiscellaneousCommands
 
-class Classes(commands.Cog):
-    def __init__(self, client: commands.Bot):
+class Classes(Cog):
+    def __init__(self, client: Bot):
         self.client = client
         
-    class_sub = SlashCommandGroup("class", "List of class subcommands", guild_ids = [536835061895397386, 871300534999584778, 497567524800561153])
+    class_sub = SlashCommandGroup("class", "List of class subcommands", guild_ids = [536835061895397386, 981068613769371718])
+
 
     @class_sub.command(
         name = "add",
@@ -395,5 +391,5 @@ class Classes(commands.Cog):
 
 
     
-def setup(client: commands.Bot):
+def setup(client: Bot):
     client.add_cog(Classes(client))
