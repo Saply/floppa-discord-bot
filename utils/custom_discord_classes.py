@@ -21,19 +21,19 @@ class ClassConfirmDeletionView(View):
     @button(label = "Yes, I want to delete this class", style = ButtonStyle.green, emoji = "✔")
     async def yes_button_callback(self, button: Button, interaction: Interaction):
         self.class_tbd.delete()
-        await self.confirmation_message.delete_original_message() 
+        await self.confirmation_message.delete_original_response() 
         await interaction.response.send_message(f"<@{self.ctx.author.id}> **{self.class_tbd.class_details.class_name} [{self.class_tbd.class_details.class_group}]** has been successfully deleted!")
 
 
     @button(label = "No! I don't want that!", style = ButtonStyle.danger, emoji = "✖")
     async def no_button_callback(self, button: Button, interaction: Interaction):
-        await self.confirmation_message.delete_original_message() 
+        await self.confirmation_message.delete_original_response() 
         await interaction.response.send_message(f"<@{self.ctx.author.id}> Class removal cancelled")
         
 
     async def on_timeout(self):
         try:
-            await self.confirmation_message.delete_original_message()
+            await self.confirmation_message.delete_original_response()
             await self.ctx.respond(f"<@{self.ctx.author.id}> Too slow, class deletion cancelled.")
 
         # The "timeout" timer still persists even after the user has already clicked a button. Currently, I don't know if Pycord has a way to
