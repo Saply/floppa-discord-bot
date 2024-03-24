@@ -8,11 +8,9 @@ from dotenv import load_dotenv
 # .env
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
-MONGO_USERNAME = os.getenv('mongo-username')
-MONGO_PASSWORD = os.getenv('mongo-password')
-MONGO_DB_NAME = os.getenv('mongo-db-name')
+MONGO_DB_URI = os.getenv('mongo-db-uri')
 
-connect(db = MONGO_DB_NAME, username = MONGO_USERNAME, password = MONGO_PASSWORD, host = f"mongodb+srv://{MONGO_USERNAME}:{MONGO_PASSWORD}@cluster0.wsfli.mongodb.net/{MONGO_DB_NAME}?retryWrites=true&w=majority")
+connect(host = MONGO_DB_URI)
 
 client = Bot(command_prefix = '!', intents = Intents.all())
 
